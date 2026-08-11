@@ -12,7 +12,7 @@ our @EXPORT_OK = qw(
                           sendMessage                         
                   );
 
-our $VERSION = '1.3';
+our $VERSION = '1.4';
 
 use Paubox_Email_SDK::ApiHelper;
 use Paubox_Email_SDK::Message;
