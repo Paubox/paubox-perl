@@ -26,8 +26,8 @@ cpanm Paubox_Email_SDK
 Otherwise, you can install from the included archive.
 
 ```bash
-git clone https://github.com/Paubox/paubox-perl-sdk.git
-cd paubox-perl-sdk
+git clone https://github.com/Paubox/paubox-perl.git
+cd paubox-perl
 cpanm Paubox_Email_SDK-1.2.tar.gz
 ```
 
@@ -225,7 +225,7 @@ my $response = $forms->submitForm(
 <a name="#contributing"></a>
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/paubox/paubox-perl-sdk.
+Bug reports and pull requests are welcome on GitHub at https://github.com/paubox/paubox-perl.
 
 
 <a name="#license"></a>
