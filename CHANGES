@@ -18,6 +18,19 @@ Revision history for Perl module Paubox_Email_SDK / Paubox_Forms_SDK
       responseCode accessor storing the HTTP status of the helper
       instance's last request (used by the CSV/PDF export methods).
 
+    - SECURITY: form and submission ids are now validated and
+      percent-encoded before being interpolated into the request path
+      (all nine call sites, including the public getForm/submitForm).
+      Previously an id containing "/", "?", "#" or ".." could retarget
+      a request at a different endpoint while still sending the caller's
+      credentials -- and because GET /api/forms/{id} and
+      GET /api/forms/{id}/submissions both key their payload on "data",
+      a formId of "<uuid>/submissions" satisfied the success-key check,
+      so getFormById returned submission records for a call that asked
+      for a form definition. Ids containing anything outside
+      [A-Za-z0-9_-] now die with a clear message before any request is
+      made.
+
 1.3 2024-01-01
 
     - Added Paubox_Forms_SDK module with getForm and submitForm methods.
