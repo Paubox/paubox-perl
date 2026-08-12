@@ -469,4 +469,110 @@ sub getSubmissionPdf_Live: Tests(1) {
     }
 }
 
+# ---------------------------------------------------------------------------
+# OFFLINE path-safety tests.
+#
+# Ids are interpolated into the request path, so an id carrying "/", "?", "#"
+# or ".." must never be able to retarget the request at a different endpoint
+# while still sending the caller's credentials. The dangerous case is silent:
+# GET /api/forms/{id} and GET /api/forms/{id}/submissions both key their
+# payload on "data", so a formId of "<uuid>/submissions" would satisfy
+# _assertSuccessKey and return submission records from a call that asked for a
+# form definition.
+#
+# These run with no network and no credentials: every assertion below must fail
+# at the id guard, which is reached before any HTTP call is made.
+# ---------------------------------------------------------------------------
+
+my $VALID_UUID       = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+my $VALID_UUID_PLAIN = 'a1b2c3d4e5f67890abcdef1234567890';
+# The exact shape that turns getFormById into an unintended submissions read.
+my $RETARGET_ID      = $VALID_UUID . '/submissions';
+
+sub pathSegment_Offline: Tests(9) {
+    print "Executing tests for pathSegment_Offline:\n";
+
+    is(
+        Paubox_Forms_SDK::_pathSegment($VALID_UUID, 'formId'),
+        $VALID_UUID,
+        'a dashed uuid4 passes through unchanged'
+    );
+    is(
+        Paubox_Forms_SDK::_pathSegment($VALID_UUID_PLAIN, 'formId'),
+        $VALID_UUID_PLAIN,
+        'an undashed uuid4 passes through unchanged'
+    );
+
+    foreach my $bad ( 'a/b', '../x', $VALID_UUID . '/..', 'x?y=1', 'x#frag', 'x%2Fy' ) {
+        eval { Paubox_Forms_SDK::_pathSegment($bad, 'formId') };
+        like($@, qr/not allowed in a Paubox Forms id/, "_pathSegment rejects '$bad'");
+    }
+
+    eval { Paubox_Forms_SDK::_pathSegment(undef, 'formId') };
+    like($@, qr/formId is required/, '_pathSegment rejects undef with a required error');
+}
+
+sub pathInjectionRejected_Offline: Tests(9) {
+    print "Executing tests for pathInjectionRejected_Offline:\n";
+
+    my $service = Paubox_Forms_SDK->new('apiKey' => 'test-api-key');
+
+    # Every method that puts a caller-supplied id in the path. The second
+    # element is the remaining args needed to reach the id guard.
+    my @calls = (
+        [ 'getForm',             [] ],
+        [ 'submitForm',          [ { 'field' => 'value' } ] ],
+        [ 'getFormById',         [] ],
+        [ 'updateForm',          [ { 'title' => 't' } ] ],
+        [ 'archiveForm',         [] ],
+        [ 'unarchiveForm',       [] ],
+        [ 'listFormSubmissions', [] ],
+        [ 'getSubmissionsCsv',   [] ],
+        [ 'getSubmissionPdf',    [ $VALID_UUID ] ],
+    );
+
+    foreach my $call (@calls) {
+        my ($method, $rest) = @{$call};
+        eval { $service->$method($RETARGET_ID, @{$rest}) };
+        like(
+            $@,
+            qr/not allowed in a Paubox Forms id/,
+            $method . ' rejects a formId that would retarget the request'
+        );
+    }
+}
+
+sub submissionIdInjectionRejected_Offline: Tests(2) {
+    print "Executing tests for submissionIdInjectionRejected_Offline:\n";
+
+    my $service = Paubox_Forms_SDK->new('apiKey' => 'test-api-key');
+
+    eval { $service->getSubmissionsCsv($VALID_UUID, '../../admin') };
+    like($@, qr/submissionId contains characters that are not allowed/,
+        'getSubmissionsCsv rejects a traversal submissionId');
+
+    eval { $service->getSubmissionPdf($VALID_UUID, 'x/y') };
+    like($@, qr/submissionId contains characters that are not allowed/,
+        'getSubmissionPdf rejects a submissionId containing a slash');
+}
+
+sub retargetNeverReachesNetwork_Offline: Tests(2) {
+    print "Executing tests for retargetNeverReachesNetwork_Offline:\n";
+
+    my $service = Paubox_Forms_SDK->new('apiKey' => 'test-api-key');
+
+    eval { $service->getFormById($RETARGET_ID) };
+    my $err = $@;
+
+    # Must fail at the guard...
+    like($err, qr/not allowed in a Paubox Forms id/,
+        'getFormById("<uuid>/submissions") dies at the id guard');
+
+    # ...and must NOT have gone to the wire. A request that reached the API
+    # would surface as a response body or an HTTP status, never as the guard
+    # message, so the absence of those is what proves no call was made.
+    unlike($err, qr/"data"|Request failed with HTTP status|Unexpected empty response/,
+        'no HTTP request is made for a retargeting formId');
+}
+
 1;

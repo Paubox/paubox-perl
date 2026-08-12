@@ -101,6 +101,25 @@ form-management endpoints require a scoped API key with the `forms` scope, sent
 as `Authorization: Bearer <apiKey>`. Scoped API keys are generated in the Paubox
 admin dashboard.
 
+### Form and submission ids
+
+Every method that takes a `$formId` or `$submissionId` puts it directly in the
+request path, so those values are validated before the request is built. An id
+may contain only letters, digits, hyphens and underscores (which covers uuid4
+both with and without dashes); anything else dies immediately with
+
+```
+formId contains characters that are not allowed in a Paubox Forms id: '...'.
+Expected only letters, digits, hyphens and underscores.
+```
+
+This matters if your application takes an id from a URL, query string, or any
+other untrusted input. An id such as `<uuid>/submissions` would otherwise change
+which endpoint the request reaches while still sending your API key — and since
+`getFormById` and `listFormSubmissions` both return their payload under `data`,
+the result would look like a valid response. Validate or map ids yourself before
+passing them in if you want a friendlier error than the exception above.
+
 ---
 
 ### `Paubox_Forms_SDK->new([%params])`
