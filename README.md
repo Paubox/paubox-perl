@@ -170,6 +170,10 @@ print $response;
 The Paubox Forms API lets you retrieve form definitions and submit responses. These
 endpoints are **public** — no API key or `config.cfg` is required.
 
+The SDK also covers the authenticated form-management endpoints (listing, creating,
+updating, archiving and copying forms, plus submission exports). See
+[Managing forms](#managing-forms-authenticated) below.
+
 #### Retrieving a form
 
 ```perl
@@ -221,6 +225,77 @@ my $response = $forms->submitForm(
     [ { name => "consent.pdf", content => $encoded } ]
 );
 ```
+
+<a name="#managing-forms-authenticated"></a>
+#### Managing forms (authenticated)
+
+The form-management methods (`listForms`, `getFormById`, `createForm`, `updateForm`,
+`archiveForm`, `unarchiveForm`, `copyForm`, `getFormStats`, `listFormSubmissions`,
+`getSubmissionsCsv`, `getSubmissionPdf`) require a **scoped API key**. Scoped API keys
+are generated in the Paubox admin dashboard and must include the `forms` scope.
+
+Pass the key to the constructor, or set `FORMS_API_KEY` in `config.cfg` and it will be
+picked up automatically:
+
+```perl
+use strict;
+use warnings;
+use Paubox_Forms_SDK;
+
+# Explicitly:
+my $service = Paubox_Forms_SDK->new('apiKey' => 'YOUR_SCOPED_API_KEY');
+
+# Or via config.cfg containing: FORMS_API_KEY = YOUR_SCOPED_API_KEY
+my $service2 = Paubox_Forms_SDK->new();
+```
+
+#### Listing and creating forms
+
+```perl
+use strict;
+use warnings;
+use Paubox_Forms_SDK;
+
+my $service = Paubox_Forms_SDK->new('apiKey' => 'YOUR_SCOPED_API_KEY');
+
+# customer_id is required when using a scoped API key (your own customer id,
+# or a related customer's id) — the server responds 403 Forbidden without it.
+my $formList = $service->listForms({
+    'customer_id' => 123,
+    'search'      => 'intake',
+    'items'       => 10,
+});
+print $formList;
+# Returns JSON with "results" (array of forms) and "page_info"
+
+my $created = $service->createForm({
+    'title'       => 'Patient Intake',
+    'form_json'   => { 'fields' => [] },
+    'customer_id' => 123,
+});
+print $created;
+# Returns JSON with the new form's "id"
+```
+
+#### Exporting a submission as PDF
+
+`getSubmissionPdf` returns raw PDF bytes (and `getSubmissionsCsv` returns raw CSV text),
+so write them straight to a file:
+
+```perl
+use strict;
+use warnings;
+use Paubox_Forms_SDK;
+
+my $service = Paubox_Forms_SDK->new('apiKey' => 'YOUR_SCOPED_API_KEY');
+my $pdf = $service->getSubmissionPdf("your-form-uuid", "submission-id");
+
+open(my $fh, '>:raw', 'submission.pdf') or die "Cannot open file: $!";
+print $fh $pdf;
+close($fh);
+```
+
+See [api.md](api.md) for the full Forms API reference.
 
 <a name="#contributing"></a>
 ## Contributing

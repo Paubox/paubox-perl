@@ -3,7 +3,7 @@ package Paubox_Email_SDK::Message;
 use strict;
 use warnings;
 
-our $VERSION = '1.3';
+our $VERSION = '1.4';
 
 # constructor
 sub new {

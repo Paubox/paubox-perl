@@ -8,9 +8,9 @@ Official Perl SDK for the Paubox Email API and Paubox Forms API.
 lib/
   Paubox_Email_SDK.pm          # Email API: sendMessage, getEmailDisposition
   Paubox_Email_SDK/
-    ApiHelper.pm               # HTTP layer (REST::Client GET/POST)
+    ApiHelper.pm               # HTTP layer (REST::Client GET/POST/PUT, responseCode accessor)
     Message.pm                 # Email message object
-  Paubox_Forms_SDK.pm          # Forms API: getForm, submitForm
+  Paubox_Forms_SDK.pm          # Forms API: public getForm/submitForm + authenticated form management
 t/
   Paubox_Email_SDK.t           # Test runner entry point
   SendMessage_TestData.csv     # CSV-driven test data for email tests
@@ -37,16 +37,21 @@ cpanm JSON Config::General REST::Client TryCatch String::Util MIME::Base64
 cpanm Test::Class Test::More Text::CSV
 ```
 
-### Configure credentials (Email API only)
+### Configure credentials
 
 Create `config.cfg` in the project root:
 
 ```
 API_KEY = YOUR_API_KEY
 API_USERNAME = YOUR_ENDPOINT_NAME
+FORMS_API_KEY = YOUR_SCOPED_API_KEY   # optional; only for authenticated Forms methods
 ```
 
-The Forms API is public and does not require credentials.
+`API_KEY`/`API_USERNAME` are required by the Email API only. The public Forms
+endpoints (`getForm`, `submitForm`) need no credentials; the authenticated
+form-management methods need a scoped API key with the `forms` scope, supplied
+either as `FORMS_API_KEY` in `config.cfg` or as
+`Paubox_Forms_SDK->new('apiKey' => ...)`.
 
 ## Running Tests
 
@@ -57,11 +62,12 @@ make test
 
 ## Key Architecture Patterns
 
-- **HTTP layer:** All requests go through `Paubox_Email_SDK::ApiHelper`, which wraps `REST::Client`. Both `getForm`/`submitForm` and email methods reuse this helper; Forms calls pass an empty auth header which is now conditionally omitted.
-- **Error handling:** `TryCatch` is used throughout; methods die on unexpected responses.
-- **JSON:** All request bodies are `encode_json` encoded; responses are parsed with `from_json` / `decode_json`.
+- **HTTP layer:** All requests go through `Paubox_Email_SDK::ApiHelper`, which wraps `REST::Client` (`callToAPIByGet`/`callToAPIByPost`/`callToAPIByPut`). Public Forms calls pass an empty auth header which is conditionally omitted. When called on an instance, the helper stores the last HTTP status, readable via `responseCode()` — used by the Forms binary endpoints (CSV/PDF) to detect non-2xx responses.
+- **Error handling:** `TryCatch` is used throughout; methods die on unexpected responses. Authenticated Forms methods die if no API key is set.
+- **JSON:** All request bodies are `encode_json` encoded; responses are parsed with `from_json` / `decode_json`. Exception: `getSubmissionsCsv`/`getSubmissionPdf` return raw CSV/PDF bytes.
 - **Base64:** HTML email content is base64-encoded before transmission (`MIME::Base64`). Form attachment content must also be base64-encoded by the caller.
-- **Config:** Email credentials are read from `config.cfg` using `Config::General`. No config file is needed for the Forms SDK.
+- **Query strings:** Forms list/stats params are built with `URI::Escape` (`uri_escape`); only caller-provided keys are included.
+- **Config:** Email credentials are read from `config.cfg` using `Config::General`. The Forms SDK needs no config for public endpoints; for authenticated methods it takes `'apiKey'` in the constructor or falls back to `FORMS_API_KEY` in `config.cfg` (loaded in an eval so a missing/broken config never breaks the public-only constructor).
 
 ## APIs
 
@@ -72,7 +78,8 @@ make test
 
 ### Forms API (`Paubox_Forms_SDK`)
 - Base URL: `https://apx.paubox.com/forms`
-- Auth: None (public endpoints)
-- Methods: `getForm`, `submitForm`
+- Auth: None for public endpoints; `Authorization: Bearer <scoped API key>` (with `forms` scope) for form-management endpoints
+- Public methods: `getForm`, `submitForm`
+- Authenticated methods: `listForms`, `getFormById`, `createForm`, `updateForm`, `archiveForm`, `unarchiveForm`, `copyForm`, `getFormStats`, `listFormSubmissions`, `getSubmissionsCsv`, `getSubmissionPdf`
 
 See [api.md](api.md) for full API reference.

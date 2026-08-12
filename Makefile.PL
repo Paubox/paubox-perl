@@ -10,8 +10,9 @@ WriteMakefile(
         'REST::Client' => 273,        
         'TryCatch' => 1.003002,
         'String::Util' => 1.26,
-        'MIME::Base64' => 3.15,        
-    }, 
+        'MIME::Base64' => 3.15,
+        'URI' => 1.60,
+    },
     ABSTRACT_FROM     => 'lib/Paubox_Email_SDK.pm',
     AUTHOR            => 'Paubox Inc.',    
 );
