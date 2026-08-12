@@ -18,6 +18,18 @@ Revision history for Perl module Paubox_Email_SDK / Paubox_Forms_SDK
       responseCode accessor storing the HTTP status of the helper
       instance's last request (used by the CSV/PDF export methods).
 
+    - Added a URL path-segment sanitizer to Paubox_Forms_SDK: all
+      caller-supplied form_id / submission_id values are now rejected
+      when they contain '/', '?', '#', newline characters, or the
+      dot-segments '.' and '..'; authenticated methods additionally
+      require UUID shape. Prevents a hostile identifier from
+      retargeting the request on the same host with the caller's
+      bearer token attached.
+
+    - Set an explicit 30-second REST::Client timeout in ApiHelper
+      (previously inherited LWP::UserAgent's 180-second default);
+      hung connections now abort promptly.
+
 1.3 2024-01-01
 
     - Added Paubox_Forms_SDK module with getForm and submitForm methods.

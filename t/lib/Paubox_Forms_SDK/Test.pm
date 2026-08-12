@@ -221,7 +221,7 @@ sub argValidation_Offline: Tests(19) {
     eval { $service->updateForm(undef, { 'title' => 't' }) };
     like($@, qr/formId is required/, 'updateForm dies without formId');
 
-    eval { $service->updateForm('some-form-id', {}) };
+    eval { $service->updateForm('11111111-1111-1111-1111-111111111111', {}) };
     like($@, qr/updates is required/, 'updateForm dies on empty updates hashref');
 
     eval { $service->archiveForm('') };
@@ -245,8 +245,128 @@ sub argValidation_Offline: Tests(19) {
     eval { $service->getSubmissionPdf() };
     like($@, qr/formId is required/, 'getSubmissionPdf dies without formId');
 
-    eval { $service->getSubmissionPdf('some-form-id') };
+    eval { $service->getSubmissionPdf('11111111-1111-1111-1111-111111111111') };
     like($@, qr/submissionId is required/, 'getSubmissionPdf dies without submissionId');
+}
+
+# ---------------------------------------------------------------------------
+# OFFLINE regression tests for the URL path-segment sanitizer.
+# Caller-supplied form_id / submission_id must never retarget the request
+# (path splice via '/', query splice via '?', fragment via '#', dot-segments,
+# newline injection). Authenticated methods additionally require UUID shape.
+# ---------------------------------------------------------------------------
+
+sub pathGuard_AuthenticatedMethods_RejectHostileFormId: Tests(35) {
+    print "Executing tests for pathGuard_AuthenticatedMethods_RejectHostileFormId:\n";
+
+    my $service = Paubox_Forms_SDK->new('apiKey' => 'test-api-key');
+
+    # Methods that interpolate $formId into the URL AND carry the bearer
+    # token. copyForm is exempt (form_id is in the body).
+    my @methods = (
+        [ 'getFormById',         [] ],
+        [ 'updateForm',          [ { 'title' => 't' } ] ],
+        [ 'archiveForm',         [] ],
+        [ 'unarchiveForm',       [] ],
+        [ 'listFormSubmissions', [] ],
+        [ 'getSubmissionsCsv',   [] ],
+        [ 'getSubmissionPdf',    [ '11111111-1111-1111-1111-111111111111' ] ],
+    );
+
+    my @hostileFormIds = (
+        [ 'bogus/../../public/form_data/aaaa', qr/must not contain/ ],
+        [ '11111111-1111-1111-1111-111111111111?admin=1', qr/must not contain/ ],
+        [ '11111111-1111-1111-1111-111111111111#frag',   qr/must not contain/ ],
+        [ '..',       qr/'\.\.' is not allowed/ ],
+        [ 'not-a-uuid', qr/does not match the documented UUID format/ ],
+    );
+
+    foreach my $m (@methods) {
+        my ($method, $extraArgs) = @{$m};
+        foreach my $h (@hostileFormIds) {
+            my ($formId, $expected) = @{$h};
+            eval { $service->$method($formId, @{$extraArgs}) };
+            like($@, $expected,
+                $method . ' rejects hostile formId (' . $formId . ')');
+        }
+    }
+}
+
+sub pathGuard_AuthenticatedMethods_RejectHostileSubmissionId: Tests(8) {
+    print "Executing tests for pathGuard_AuthenticatedMethods_RejectHostileSubmissionId:\n";
+
+    my $service = Paubox_Forms_SDK->new('apiKey' => 'test-api-key');
+    my $safeFormId = '11111111-1111-1111-1111-111111111111';
+
+    # Both methods take (form_id, submission_id). getSubmissionsCsv makes
+    # submissionId optional; getSubmissionPdf requires it.
+    my @cases = (
+        [ 'getSubmissionsCsv', '..%2Fother%2Fsubmission-pdf', qr/must not contain|does not match/ ],
+        [ 'getSubmissionsCsv', '22222222-2222-2222-2222-222222222222?x=', qr/must not contain/ ],
+        [ 'getSubmissionsCsv', '..',       qr/'\.\.' is not allowed/ ],
+        [ 'getSubmissionsCsv', 'not-a-uuid', qr/does not match the documented UUID format/ ],
+        [ 'getSubmissionPdf',  '../foo/submission-pdf', qr/must not contain/ ],
+        [ 'getSubmissionPdf',  '22222222-2222-2222-2222-222222222222#x', qr/must not contain/ ],
+        [ 'getSubmissionPdf',  '..',       qr/'\.\.' is not allowed/ ],
+        [ 'getSubmissionPdf',  'not-a-uuid', qr/does not match the documented UUID format/ ],
+    );
+
+    foreach my $c (@cases) {
+        my ($method, $subId, $expected) = @{$c};
+        eval { $service->$method($safeFormId, $subId) };
+        like($@, $expected,
+            $method . ' rejects hostile submissionId (' . $subId . ')');
+    }
+}
+
+sub pathGuard_PublicMethods_RejectPathSplice: Tests(6) {
+    print "Executing tests for pathGuard_PublicMethods_RejectPathSplice:\n";
+
+    my $forms = Paubox_Forms_SDK->new();
+
+    # Public methods (getForm/submitForm) do NOT require UUID shape — a form
+    # can be created with any id in the docs — but path/query/fragment splices
+    # still retarget requests, so they must be rejected.
+    foreach my $formId ('bogus/../../api/forms', '<uuid>?admin=1', '<uuid>#frag') {
+        eval { $forms->getForm($formId) };
+        like($@, qr/must not contain/,
+            "getForm rejects splice-bearing formId ($formId)");
+        eval { $forms->submitForm($formId, { first_name => 'x' }) };
+        like($@, qr/must not contain/,
+            "submitForm rejects splice-bearing formId ($formId)");
+    }
+}
+
+sub pathGuard_PublicMethods_AcceptNonUuidFormId: Tests(1) {
+    print "Executing tests for pathGuard_PublicMethods_AcceptNonUuidFormId:\n";
+
+    # Public methods percent-encode instead of UUID-guarding. A non-UUID
+    # formId like 'legacy-slug' must NOT be rejected at the SDK boundary;
+    # the server owns the 'this id exists' check. We can only assert we
+    # don't die on the client — the actual HTTP call will fail without
+    # network access, but the die will come from the network layer, not
+    # from _pathSegment. Verify by asserting the die does NOT match our
+    # sanitizer's messages.
+    my $forms = Paubox_Forms_SDK->new();
+    eval { $forms->getForm('legacy-slug') };
+    unlike($@, qr/is required|is not allowed|must not contain|does not match/,
+        'getForm accepts a non-UUID (non-hostile) formId at the SDK boundary');
+}
+
+sub apiHelper_TimeoutSet_Offline: Tests(1) {
+    print "Executing tests for apiHelper_TimeoutSet_Offline:\n";
+
+    # ApiHelper must set an explicit timeout on the REST::Client so that
+    # hung connections abort promptly instead of inheriting LWP's 180s
+    # default. Confirm by grepping the module source.
+    require File::Spec;
+    my $module = File::Spec->catfile('lib','Paubox_Email_SDK','ApiHelper.pm');
+    open my $fh, '<', $module or die "cannot open $module: $!";
+    local $/;
+    my $src = <$fh>;
+    close $fh;
+    like($src, qr/\$client\s*->\s*setTimeout\(/,
+        'ApiHelper sets an explicit REST::Client timeout');
 }
 
 # ---------------------------------------------------------------------------

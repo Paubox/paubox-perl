@@ -31,6 +31,7 @@ sub callToAPIByGet {
     my($class, $baseUrl, $apiUrl, $authHeader) = @_;
 
     my $client = REST::Client -> new();
+    $client -> setTimeout(30);
 
     $client -> addHeader('Content-Type', 'application/json');
     $client -> addHeader('Authorization', $authHeader) if $authHeader;
@@ -48,6 +49,7 @@ sub callToAPIByPost {
     my($class, $baseUrl, $apiUrl, $authHeader, $reqBody) = @_;
 
     my $client = REST::Client -> new();
+    $client -> setTimeout(30);
 
     $client -> addHeader('Content-Type', 'application/json');
     $client -> addHeader('Authorization', $authHeader) if $authHeader;
@@ -67,6 +69,7 @@ sub callToAPIByPut {
     my($class, $baseUrl, $apiUrl, $authHeader, $reqBody) = @_;
 
     my $client = REST::Client -> new();
+    $client -> setTimeout(30);
 
     $client -> addHeader('Content-Type', 'application/json');
     $client -> addHeader('Authorization', $authHeader) if $authHeader;

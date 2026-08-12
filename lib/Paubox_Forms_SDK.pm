@@ -80,6 +80,33 @@ sub _getAuthHeader {
     return "Bearer " . $this -> {'apiKey'};
 }
 
+# Sanitizes a caller-supplied path segment before interpolation into a URL.
+# Rejects undef / empty / bare `.` / bare `..` and any value containing a
+# path, query, fragment, or CR/LF character — a hostile $formId like
+# "<uuid>/archive?x=" would otherwise turn a read into a mutation on the
+# same host with the caller's bearer token attached. When `require_uuid`
+# is true, additionally enforces UUID v4-ish shape so that the documented
+# "UUID" contract is honoured by the SDK itself. Returns the value
+# percent-encoded via URI::Escape so any residual reserved character is
+# safe inside a single path segment.
+sub _pathSegment {
+    my ($value, %opts) = @_;
+    my $name = defined($opts{'name'}) ? $opts{'name'} : 'path segment';
+    if ( !defined($value) || $value eq "" ) {
+        die $name . " is required.";
+    }
+    if ( $value eq "." || $value eq ".." ) {
+        die "invalid " . $name . ": '" . $value . "' is not allowed.";
+    }
+    if ( $value =~ m{[/?#\r\n]} ) {
+        die "invalid " . $name . ": must not contain '/', '?', '#' or newline characters.";
+    }
+    if ( $opts{'require_uuid'} && $value !~ /\A[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\z/ ) {
+        die "invalid " . $name . ": '" . $value . "' does not match the documented UUID format.";
+    }
+    return uri_escape($value);
+}
+
 # Boolean query params the backend only accepts as the literal strings
 # "true"/"false", so any truthy/falsy Perl value (1/0, JSON::true/JSON::false)
 # is normalized before it is put on the query string.
@@ -162,11 +189,9 @@ sub getForm {
     my ($class, $formId) = @_;
     my $apiResponseJSON = "";
     try {
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
+        my $safeFormId = _pathSegment($formId, name => "formId");
 
-        my $apiUrl = "/public/form_data/" . $formId;
+        my $apiUrl = "/public/form_data/" . $safeFormId;
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponseJSON = $apiHelper->callToAPIByGet($formsBaseURL, $apiUrl, "");
 
@@ -196,15 +221,13 @@ sub submitForm {
     my ($class, $formId, $formData, $attachments) = @_;
     my $apiResponseJSON = "";
     try {
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
+        my $safeFormId = _pathSegment($formId, name => "formId");
 
         if ( !defined($formData) || ref($formData) ne 'HASH' || !%{$formData} ) {
             die "formData is required and must be a non-empty hash reference.";
         }
 
-        my $apiUrl = "/api/forms/" . $formId . "/submissions";
+        my $apiUrl = "/api/forms/" . $safeFormId . "/submissions";
 
         my %payload = ( 'form_data' => $formData );
         if ( defined($attachments) && ref($attachments) eq 'ARRAY' && @{$attachments} ) {
@@ -270,12 +293,9 @@ sub getFormById {
     my $apiResponseJSON = "";
     try {
         my $authHeader = _getAuthHeader($this);
+        my $safeFormId = _pathSegment($formId, name => "formId", require_uuid => 1);
 
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
-
-        my $apiUrl = "/api/forms/" . $formId;
+        my $apiUrl = "/api/forms/" . $safeFormId;
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponseJSON = $apiHelper->callToAPIByGet($formsBaseURL, $apiUrl, $authHeader);
 
@@ -343,10 +363,8 @@ sub updateForm {
     my $apiResponseJSON = "";
     try {
         my $authHeader = _getAuthHeader($this);
+        my $safeFormId = _pathSegment($formId, name => "formId", require_uuid => 1);
 
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
         if ( !defined($updates) || ref($updates) ne 'HASH' || !%{$updates} ) {
             die "updates is required and must be a non-empty hash reference.";
         }
@@ -355,7 +373,7 @@ sub updateForm {
         my %payload = %{$updates};
         _coerceBooleanKeys(\%payload, qw(active));
 
-        my $apiUrl = "/api/forms/" . $formId;
+        my $apiUrl = "/api/forms/" . $safeFormId;
         my $reqBody = encode_json(\%payload);
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponseJSON = $apiHelper->callToAPIByPut($formsBaseURL, $apiUrl, $authHeader, $reqBody);
@@ -377,12 +395,9 @@ sub archiveForm {
     my $apiResponseJSON = "";
     try {
         my $authHeader = _getAuthHeader($this);
+        my $safeFormId = _pathSegment($formId, name => "formId", require_uuid => 1);
 
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
-
-        my $apiUrl = "/api/forms/" . $formId . "/archive";
+        my $apiUrl = "/api/forms/" . $safeFormId . "/archive";
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponseJSON = $apiHelper->callToAPIByPost($formsBaseURL, $apiUrl, $authHeader, "");
 
@@ -403,12 +418,9 @@ sub unarchiveForm {
     my $apiResponseJSON = "";
     try {
         my $authHeader = _getAuthHeader($this);
+        my $safeFormId = _pathSegment($formId, name => "formId", require_uuid => 1);
 
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
-
-        my $apiUrl = "/api/forms/" . $formId . "/unarchive";
+        my $apiUrl = "/api/forms/" . $safeFormId . "/unarchive";
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponseJSON = $apiHelper->callToAPIByPost($formsBaseURL, $apiUrl, $authHeader, "");
 
@@ -485,12 +497,9 @@ sub listFormSubmissions {
     my $apiResponseJSON = "";
     try {
         my $authHeader = _getAuthHeader($this);
+        my $safeFormId = _pathSegment($formId, name => "formId", require_uuid => 1);
 
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
-
-        my $apiUrl = "/api/forms/" . $formId . "/submissions" . _buildQueryString(
+        my $apiUrl = "/api/forms/" . $safeFormId . "/submissions" . _buildQueryString(
             $params,
             qw(page items order order_by submission_id)
         );
@@ -516,14 +525,11 @@ sub getSubmissionsCsv {
     my $apiResponse = "";
     try {
         my $authHeader = _getAuthHeader($this);
+        my $safeFormId = _pathSegment($formId, name => "formId", require_uuid => 1);
 
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
-
-        my $apiUrl = "/api/forms/" . $formId . "/submissions/submission-csv";
+        my $apiUrl = "/api/forms/" . $safeFormId . "/submissions/submission-csv";
         if ( defined($submissionId) && $submissionId ne "" ) {
-            $apiUrl .= "/" . $submissionId;
+            $apiUrl .= "/" . _pathSegment($submissionId, name => "submissionId", require_uuid => 1);
         }
 
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
@@ -552,15 +558,10 @@ sub getSubmissionPdf {
     my $apiResponse = "";
     try {
         my $authHeader = _getAuthHeader($this);
+        my $safeFormId = _pathSegment($formId, name => "formId", require_uuid => 1);
+        my $safeSubmissionId = _pathSegment($submissionId, name => "submissionId", require_uuid => 1);
 
-        if ( !defined($formId) || $formId eq "" ) {
-            die "formId is required.";
-        }
-        if ( !defined($submissionId) || $submissionId eq "" ) {
-            die "submissionId is required.";
-        }
-
-        my $apiUrl = "/api/forms/" . $formId . "/submissions/" . $submissionId . "/submission-pdf";
+        my $apiUrl = "/api/forms/" . $safeFormId . "/submissions/" . $safeSubmissionId . "/submission-pdf";
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponse = $apiHelper->callToAPIByGet($formsBaseURL, $apiUrl, $authHeader);
 
