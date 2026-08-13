@@ -10,9 +10,9 @@ use Test::More;
 use base qw(Test::Class);
 use Text::CSV qw(csv);
 
-# The Email API tests are live tests: they need config.cfg (API_KEY and
-# API_USERNAME) and network access. Without config.cfg the constructor dies,
-# so the whole class is skipped to keep credential-less runs (e.g. CI) green.
+# The Email API tests are live tests: they need config.cfg (API_KEY) and
+# network access. Without config.cfg the constructor dies, so the whole
+# class is skipped to keep credential-less runs (e.g. CI) green.
 sub SKIP_CLASS {
     return 0 if -e 'config.cfg';
     return "config.cfg not present; skipping live Email API tests";

@@ -12,7 +12,7 @@ our @EXPORT_OK = qw(
                           sendMessage                         
                   );
 
-our $VERSION = '1.4';
+our $VERSION = '1.5';
 
 use Paubox_Email_SDK::ApiHelper;
 use Paubox_Email_SDK::Message;
@@ -24,8 +24,7 @@ use String::Util qw(trim);
 use MIME::Base64;
 
 my $apiKey ="";
-my $apiUser="";
-my $baseURL = "https://api.paubox.net:443/v1/";
+my $baseURL = "https://api.paubox.com/v1";
 
 #
 # Default Constructor
@@ -46,15 +45,7 @@ sub new{
             die "apiKey is missing.";
         }
 
-        if(
-            not defined $config{'apiUsername'} or 
-            $config{'apiUsername'} eq ""             
-        ) {
-            die "apiUsername is missing.";
-        }
-        
-        $apiKey = $config{'apiKey'};       
-        $apiUser = $config{'apiUsername'};
+        $apiKey = $config{'apiKey'};
 
         bless $this;        
 
@@ -171,7 +162,7 @@ sub getEmailDisposition {
         my $authHeader =  _getAuthHeader() ;
         my $apiUrl = "/message_receipt?sourceTrackingId=" . $sourceTrackingId; 
         my $apiHelper =  Paubox_Email_SDK::ApiHelper -> new();  
-        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL.$apiUser, $apiUrl, $authHeader);
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
 
         # Converting JSON api response to perl
         my $apiResponsePERL = from_json($apiResponseJSON);        
@@ -220,7 +211,7 @@ sub sendMessage {
         my $apiUrl = "/messages";       
         my $reqBody = _convertMsgObjtoJSONReqObj($msgObj);
         my $apiHelper =  Paubox_Email_SDK::ApiHelper -> new(); 
-        $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL.$apiUser, $apiUrl, _getAuthHeader() , $reqBody);                
+        $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL, $apiUrl, _getAuthHeader() , $reqBody);                
         # Converting JSON api response to perl
         my $apiResponsePERL = from_json($apiResponseJSON);         
 

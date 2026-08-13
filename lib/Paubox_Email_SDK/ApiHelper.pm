@@ -13,7 +13,7 @@ our @EXPORT_OK = qw(
                           responseCode
                   );
 
-our $VERSION = '1.4';
+our $VERSION = '1.5';
 
 use REST::Client;
 

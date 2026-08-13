@@ -3,21 +3,20 @@
 ## Email API
 
 **Module:** `Paubox_Email_SDK`  
-**Base URL:** `https://api.paubox.net/v1/{apiUsername}`  
+**Base URL:** `https://api.paubox.com/v1`  
 **Authentication:** `Token token=<apiKey>` — credentials read from `config.cfg`
 
 ---
 
 ### `Paubox_Email_SDK->new()`
 
-Loads `apiKey` and `apiUsername` from `config.cfg` in the current working directory.
+Loads `apiKey` from `config.cfg` in the current working directory.
 
 ```
 API_KEY = YOUR_API_KEY
-API_USERNAME = YOUR_ENDPOINT_NAME
 ```
 
-Dies with an error message if either credential is missing.
+Dies with an error message if the credential is missing.
 
 ---
 
@@ -95,7 +94,7 @@ my $response = $service->getEmailDisposition("1aed91d1-f7ce-4c3d-8df2-85ecd225a7
 ## Forms API
 
 **Module:** `Paubox_Forms_SDK`  
-**Base URL:** `https://apx.paubox.com/forms`  
+**Base URL:** `https://api.paubox.com/forms`  
 **Authentication:** None for the public endpoints (`getForm`, `submitForm`). All
 form-management endpoints require a scoped API key with the `forms` scope, sent
 as `Authorization: Bearer <apiKey>`. Scoped API keys are generated in the Paubox
