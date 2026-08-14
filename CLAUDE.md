@@ -43,11 +43,10 @@ Create `config.cfg` in the project root:
 
 ```
 API_KEY = YOUR_API_KEY
-API_USERNAME = YOUR_ENDPOINT_NAME
 FORMS_API_KEY = YOUR_SCOPED_API_KEY   # optional; only for authenticated Forms methods
 ```
 
-`API_KEY`/`API_USERNAME` are required by the Email API only. The public Forms
+`API_KEY` is required by the Email API only. The public Forms
 endpoints (`getForm`, `submitForm`) need no credentials; the authenticated
 form-management methods need a scoped API key with the `forms` scope, supplied
 either as `FORMS_API_KEY` in `config.cfg` or as
@@ -72,12 +71,12 @@ make test
 ## APIs
 
 ### Email API (`Paubox_Email_SDK`)
-- Base URL: `https://api.paubox.net/v1/{apiUsername}`
+- Base URL: `https://api.paubox.com/v1`
 - Auth: `Token token=<apiKey>`
 - Methods: `sendMessage`, `getEmailDisposition`
 
 ### Forms API (`Paubox_Forms_SDK`)
-- Base URL: `https://apx.paubox.com/forms`
+- Base URL: `https://api.paubox.com/forms`
 - Auth: None for public endpoints; `Authorization: Bearer <scoped API key>` (with `forms` scope) for form-management endpoints
 - Public methods: `getForm`, `submitForm`
 - Authenticated methods: `listForms`, `getFormById`, `createForm`, `updateForm`, `archiveForm`, `unarchiveForm`, `copyForm`, `getFormStats`, `listFormSubmissions`, `getSubmissionsCsv`, `getSubmissionPdf`

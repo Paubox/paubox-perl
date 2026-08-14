@@ -23,7 +23,7 @@ our @EXPORT_OK = qw(
                           getSubmissionPdf
                   );
 
-our $VERSION = '1.4';
+our $VERSION = '1.5';
 
 use Paubox_Email_SDK::ApiHelper;
 
@@ -32,7 +32,7 @@ use Config::General;
 use TryCatch;
 use URI::Escape;
 
-my $formsBaseURL = 'https://apx.paubox.com/forms';
+my $formsBaseURL = 'https://api.paubox.com/forms';
 
 #
 # Default Constructor (no credentials required for the public endpoints)
