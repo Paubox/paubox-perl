@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: prove (perl ${{ matrix.perl }})
+    runs-on: ubuntu-latest
+    # Official perl images rather than a setup action, so the matrix needs no
+    # third-party marketplace Action. They ship cpanm.
+    container: perl:${{ matrix.perl }}
+    strategy:
+      fail-fast: false
+      matrix:
+        perl: ["5.34", "5.36", "5.38"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: cpanm --notest --installdeps .
+
+      - name: Run tests
+        # Written POSIX-safe on purpose: the older perl images ship no bash, so
+        # this runs under sh, where `set -o pipefail` is not available.
+        run: |
+          rc=0
+          prove -l -v t/ > tap.txt 2>&1 || rc=$?
+          cat tap.txt
+          exit $rc
+
+      - name: Assert the suite actually executed
+        run: perl .github/scripts/assert_tests_ran.pl tap.txt

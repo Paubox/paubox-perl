@@ -73,3 +73,6 @@ build-iPhoneSimulator/
 *.pm.tdy
 *.bs
 t/SendMessage_TestData_*.csv
+
+# TAP output written by CI.
+tap.txt
