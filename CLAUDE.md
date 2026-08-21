@@ -82,3 +82,25 @@ make test
 - Authenticated methods: `listForms`, `getFormById`, `createForm`, `updateForm`, `archiveForm`, `unarchiveForm`, `copyForm`, `getFormStats`, `listFormSubmissions`, `getSubmissionsCsv`, `getSubmissionPdf`
 
 See [api.md](api.md) for full API reference.
+
+## Releases
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please). Merging to `master` refreshes a standing release PR; merging *that* PR bumps `version.txt` and all four `$VERSION` declarations, writes `CHANGES`, creates a bare `vX.Y.Z` tag and a GitHub release, and **attaches a freshly built distribution tarball to that release**.
+
+Do **not** hand-edit `$VERSION`, `version.txt`, or `CHANGES` — release-please owns all three.
+
+The next version comes from PR titles: `feat:` gives a minor bump, `fix:` a patch, and a `!` suffix or a `BREAKING CHANGE:` footer gives a major. `.github/workflows/pr-title.yml` rejects titles release-please cannot parse.
+
+### Three Perl-specific constraints
+
+**`$VERSION` must stay three-part semver.** release-please's updater only matches `X.Y.Z`. A two-part decimal like `1.5` is invisible to it — left untouched, with no error — so the version would silently stop tracking releases. This is why the declarations read `1.2.0` rather than `1.2`.
+
+**The next CPAN version has to be `2.0.0` or higher.** Perl compares `1.5` as `v1.500.0`, so no `1.x.y` semver exceeds what the repo previously declared, and PAUSE would reject it as a downgrade. release-please only emits three-part semver, so there is no smaller number available.
+
+**`$VERSION` is declared in four files** — `Paubox_Email_SDK.pm`, `Paubox_Forms_SDK.pm`, `ApiHelper.pm`, `Message.pm`. Only the first feeds `Makefile.PL`'s `VERSION_FROM`, so the others can drift unnoticed; all four are listed as `extra-files` and the release job asserts they agree. Each carries an `x-release-please-version` annotation, and those are load-bearing.
+
+### Not published to CPAN
+
+Publishing is out of scope. CPAN has 1.0, 1.1 and 1.2 from 2019, all uploaded from a personal PAUSE account (`VIGHNESH`) that the team does not control. Until that is resolved the GitHub release is the distribution channel, and each release attaches a built tarball — the `Paubox_Email_SDK-1.2.tar.gz` committed at the repo root is the 2019 build and is several `lib/` commits behind.
+
+`CHANGES` is Markdown despite the filename, so release-please can maintain it, and is configured via `changelog-path`. It must keep a heading matching `/\n###? v?[0-9[]/` or release-please prepends a header and strands the existing entries.

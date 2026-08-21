@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "Paubox_Email_SDK",
+      "changelog-path": "CHANGES",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true,
+      "draft": false,
+      "prerelease": false,
+      "extra-files": [
+        "lib/Paubox_Email_SDK.pm",
+        "lib/Paubox_Forms_SDK.pm",
+        "lib/Paubox_Email_SDK/ApiHelper.pm",
+        "lib/Paubox_Email_SDK/Message.pm"
+      ]
+    }
+  }
+}
