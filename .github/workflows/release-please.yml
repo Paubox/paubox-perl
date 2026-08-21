@@ -1,0 +1,101 @@
+name: release-please
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # Maintains a release PR that bumps version.txt and the four $VERSION
+      # declarations, and writes CHANGES. Merging that PR creates the tag and
+      # the GitHub release, which gates the dist build below.
+      #
+      # changelog-path is CHANGES, not CHANGELOG.md: that is the filename CPAN
+      # readers expect. The file is Markdown so release-please can maintain it —
+      # it only emits Markdown, and against the previous plain-text format its
+      # insertion regex matched nothing, which would have prepended a header and
+      # stranded the existing entries beneath it.
+      #
+      # $VERSION lives in FOUR files. Makefile.PL derives from the first via
+      # VERSION_FROM, but the other three would drift if left out. Each carries
+      # an x-release-please-version annotation; those are load-bearing.
+      #
+      # Those declarations must stay three-part semver. release-please's updater
+      # only matches X.Y.Z — a two-part decimal like '1.5' is invisible to it and
+      # is left untouched with no error, so the version would silently stop
+      # tracking releases.
+      #
+      # The next CPAN version must be 2.0.0 (see the plan's T1): Perl compares
+      # 1.5 as v1.500.0, so no 1.x.y semver is greater than what is released.
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  attach-dist:
+    name: Attach dist to ${{ needs.release-please.outputs.tag_name }}
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    container: perl:5.38
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Verify the tag and $VERSION agree
+        env:
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          declared=$(perl -ne "print \$1 if /our \\\$VERSION = '([^']+)'/" lib/Paubox_Email_SDK.pm)
+          if [ "v${declared}" != "${RELEASE_TAG}" ]; then
+            echo "::error::\$VERSION is ${declared} but the tag is ${RELEASE_TAG}"
+            echo "::error::If it was not bumped, check the x-release-please-version annotations and that the value is three-part semver — a two-part decimal is silently ignored"
+            exit 1
+          fi
+          echo "\$VERSION ${declared} matches ${RELEASE_TAG}"
+
+      - name: Assert all four declarations agree
+        # Only lib/Paubox_Email_SDK.pm feeds Makefile.PL's VERSION_FROM, so the
+        # other three can drift without anything noticing.
+        run: |
+          n=$(grep -rh "our \$VERSION" lib/ | grep -c "'${GITHUB_REF_NAME#v}'")
+          echo "declarations at ${GITHUB_REF_NAME#v}: $n of 4"
+          [ "$n" -eq 4 ] || { echo "::error::expected all 4 \$VERSION declarations to match" >&2; exit 1; }
+
+      - name: Install dependencies
+        run: cpanm --notest --installdeps .
+
+      - name: Build the distribution
+        run: |
+          perl Makefile.PL
+          make manifest
+          make dist
+          ls -l ./*.tar.gz
+
+      # There is no CPAN upload. PAUSE ownership sits with a personal account
+      # from 2019, and publishing is out of scope. Attaching the dist is what
+      # makes a tag useful here — the tarball committed at the repo root is the
+      # 2019 build and is several lib/ commits behind.
+      - name: Attach the dist to the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          dist=$(ls Paubox_Email_SDK-*.tar.gz | head -1)
+          echo "attaching $dist"
+          gh release upload "${RELEASE_TAG}" "$dist" --clobber
