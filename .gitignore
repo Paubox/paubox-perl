@@ -76,3 +76,8 @@ t/SendMessage_TestData_*.csv
 
 # TAP output written by CI.
 tap.txt
+
+# Built distributions. Releases attach these to the GitHub release; they are
+# not committed. The 1.2 tarball predates this and stays tracked as history.
+/Paubox_Email_SDK-*.tar.gz
+!/Paubox_Email_SDK-1.2.tar.gz
