@@ -6,6 +6,17 @@ This file is Markdown so that release-please can maintain it. The filename is
 kept for CPAN convention; release-please is configured with
 `changelog-path: CHANGES`.
 
+## [2.0.0](https://github.com/Paubox/paubox-perl/compare/v1.2.0...v2.0.0) (2026-08-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* the version scheme moves from Perl decimal versions to three-part semver, and the next version has to be 2.0.0. Perl compares the repo's previous 1.5 as v1.500.0, so no 1.x.y semver is greater than it and PAUSE would reject anything smaller as a downgrade. release-please only emits three-part semver, so 2.0.0 is the smallest number that satisfies both. The major bump reflects that constraint, not a break in the API surface.
+
+### Features
+
+* release 2.0.0 ([89c9513](https://github.com/Paubox/paubox-perl/commit/89c9513eae5d66c25c23e4fbe282cd374c2ed12b))
+
 ## [Unreleased]
 
 Not yet on CPAN. The newest release there is **1.2** from July 2019.
