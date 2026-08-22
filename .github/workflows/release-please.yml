@@ -72,18 +72,27 @@ jobs:
       - name: Assert all four declarations agree
         # Only lib/Paubox_Email_SDK.pm feeds Makefile.PL's VERSION_FROM, so the
         # other three can drift without anything noticing.
+        #
+        # Use the release output, not GITHUB_REF_NAME: this workflow is
+        # triggered by a push to master and only *checks out* the tag, so
+        # GITHUB_REF_NAME is "master" here.
+        env:
+          RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
-          n=$(grep -rh "our \$VERSION" lib/ | grep -c "'${GITHUB_REF_NAME#v}'")
-          echo "declarations at ${GITHUB_REF_NAME#v}: $n of 4"
-          [ "$n" -eq 4 ] || { echo "::error::expected all 4 \$VERSION declarations to match" >&2; exit 1; }
+          want=${RELEASE_TAG#v}
+          n=$(grep -rh "our \$VERSION" lib/ | grep -c "'${want}'" || true)
+          echo "declarations at ${want}: ${n} of 4"
+          [ "$n" -eq 4 ] || { echo "::error::expected all 4 \$VERSION declarations to be ${want}" >&2; exit 1; }
 
       - name: Install dependencies
         run: cpanm --notest --installdeps .
 
       - name: Build the distribution
+        # No `make manifest`. MANIFEST is curated and deliberately excludes the
+        # historical Paubox_Email_SDK-1.2.tar.gz at the repo root; regenerating
+        # it sweeps that back in and more than doubles the dist size.
         run: |
           perl Makefile.PL
-          make manifest
           make dist
           ls -l ./*.tar.gz
 
