@@ -6,17 +6,18 @@ This file is Markdown so that release-please can maintain it. The filename is
 kept for CPAN convention; release-please is configured with
 `changelog-path: CHANGES`.
 
-## [Unreleased]
+## [2.0.0](https://github.com/Paubox/paubox-perl/compare/v1.2.0...v2.0.0) (2026-08-21)
 
-Not yet on CPAN. The newest release there is **1.2** from July 2019.
 
-Everything below was previously listed under `1.3`, `1.4` and `1.5`. Those
-versions were never uploaded, so the entries are merged here — they ship
-together as the next release.
+### ⚠ BREAKING CHANGES
 
-Note that the next CPAN version must be `2.0.0`. Perl compares `1.5` as
-`v1.500.0`, so no `1.x.y` semver is greater than what is already released, and
-release-please only emits three-part semver.
+* the version scheme moves from Perl decimal versions to three-part semver, and the next version has to be 2.0.0. Perl compares the repo's previous 1.5 as v1.500.0, so no 1.x.y semver is greater than it and PAUSE would reject anything smaller as a downgrade. release-please only emits three-part semver, so 2.0.0 is the smallest number that satisfies both. The major bump reflects that constraint, not a break in the API surface.
+
+### Changes
+
+First release since 1.2 in July 2019. It carries everything previously listed
+under `1.3`, `1.4` and `1.5` — none of those versions was ever uploaded to
+CPAN, so they ship together here.
 
 - Removed the username / endpoint name from API authentication. Authentication
   is now by API key alone; `API_USERNAME` is no longer read from `config.cfg`
