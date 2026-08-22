@@ -6,6 +6,13 @@ This file is Markdown so that release-please can maintain it. The filename is
 kept for CPAN convention; release-please is configured with
 `changelog-path: CHANGES`.
 
+## [2.0.1](https://github.com/Paubox/paubox-perl/compare/v2.0.0...v2.0.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* correct the release dist job ([#17](https://github.com/Paubox/paubox-perl/issues/17)) ([0c61fbe](https://github.com/Paubox/paubox-perl/commit/0c61fbe204f1c4a99528ef20a37c699262df7340))
+
 ## [2.0.0](https://github.com/Paubox/paubox-perl/compare/v1.2.0...v2.0.0) (2026-08-21)
 
 
