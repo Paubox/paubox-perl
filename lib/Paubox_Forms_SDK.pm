@@ -32,7 +32,7 @@ use Config::General;
 use TryCatch;
 use URI::Escape;
 
-my $formsBaseURL = 'https://api.paubox.com/forms';
+my $formsBaseURL = 'https://api.paubox.com/v1/forms';
 
 #
 # Default Constructor (no credentials required for the public endpoints)

@@ -37,3 +37,14 @@ jobs:
 
       - name: Assert the suite actually executed
         run: perl .github/scripts/assert_tests_ran.pl tap.txt
+
+  route-check:
+    name: Base URLs are routed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe the base URLs the SDKs use
+        run: |
+          grep -hoE 'https://api\.paubox\.com[a-zA-Z0-9/_.-]*' lib/Paubox_Email_SDK.pm lib/Paubox_Forms_SDK.pm \
+            | .github/scripts/route-check.sh
