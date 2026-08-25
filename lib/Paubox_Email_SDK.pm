@@ -24,7 +24,7 @@ use String::Util qw(trim);
 use MIME::Base64;
 
 my $apiKey ="";
-my $baseURL = "https://api.paubox.com/v1";
+my $baseURL = "https://api.paubox.com/v1/email";
 
 #
 # Default Constructor

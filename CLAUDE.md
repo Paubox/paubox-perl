@@ -71,12 +71,12 @@ make test
 ## APIs
 
 ### Email API (`Paubox_Email_SDK`)
-- Base URL: `https://api.paubox.com/v1`
+- Base URL: `https://api.paubox.com/v1/email`
 - Auth: `Token token=<apiKey>`
 - Methods: `sendMessage`, `getEmailDisposition`
 
 ### Forms API (`Paubox_Forms_SDK`)
-- Base URL: `https://api.paubox.com/forms`
+- Base URL: `https://api.paubox.com/v1/forms`
 - Auth: None for public endpoints; `Authorization: Bearer <scoped API key>` (with `forms` scope) for form-management endpoints
 - Public methods: `getForm`, `submitForm`
 - Authenticated methods: `listForms`, `getFormById`, `createForm`, `updateForm`, `archiveForm`, `unarchiveForm`, `copyForm`, `getFormStats`, `listFormSubmissions`, `getSubmissionsCsv`, `getSubmissionPdf`
