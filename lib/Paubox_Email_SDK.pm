@@ -3,15 +3,6 @@ package Paubox_Email_SDK;
 use strict;
 use warnings;
 
-require Exporter;
-
-our @ISA = qw(Exporter);
-
-our @EXPORT_OK = qw(
-                          getEmailDisposition
-                          sendMessage                         
-                  );
-
 our $VERSION = '2.0.0'; # x-release-please-version
 
 use Paubox_Email_SDK::ApiHelper;
@@ -66,13 +57,12 @@ sub _getAuthHeader {
 sub _returnforceSecureNotificationValue {
     
     my ($forceSecureNotification) = @_; 
-    my $forceSecureNotificationValue = "";
 
     if( !defined($forceSecureNotification) || $forceSecureNotification eq "" ) {        
         return "";
     }
     else {
-            $forceSecureNotificationValue = trim ( lc $forceSecureNotification );               
+            my $forceSecureNotificationValue = trim ( lc $forceSecureNotification );               
             if ($forceSecureNotificationValue eq "true") {
                 return 1;
             } elsif ($forceSecureNotificationValue eq "false") {

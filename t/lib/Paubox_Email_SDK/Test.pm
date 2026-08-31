@@ -111,7 +111,7 @@ sub sendMessage_Failure: Tests {
     }
 }
 
-sub getSendMessage_TestData() {
+sub getSendMessage_TestData {
 
     my($forSuccess) = @_;
     my $csvData = csv( in => "t/SendMessage_TestData.csv", headers => "skip"); # as array of array
