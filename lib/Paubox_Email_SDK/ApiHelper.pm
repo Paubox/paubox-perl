@@ -3,16 +3,6 @@ package Paubox_Email_SDK::ApiHelper;
 use strict;
 use warnings;
 
-require Exporter;
-our @ISA = qw(Exporter);
-
-our @EXPORT_OK = qw(
-                          callToAPIByGet
-                          callToAPIByPost
-                          callToAPIByPut
-                          responseCode
-                  );
-
 our $VERSION = '2.0.0'; # x-release-please-version
 
 use REST::Client;

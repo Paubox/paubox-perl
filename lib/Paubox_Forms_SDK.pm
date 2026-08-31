@@ -3,26 +3,6 @@ package Paubox_Forms_SDK;
 use strict;
 use warnings;
 
-require Exporter;
-
-our @ISA = qw(Exporter);
-
-our @EXPORT_OK = qw(
-                          getForm
-                          submitForm
-                          listForms
-                          getFormById
-                          createForm
-                          updateForm
-                          archiveForm
-                          unarchiveForm
-                          copyForm
-                          getFormStats
-                          listFormSubmissions
-                          getSubmissionsCsv
-                          getSubmissionPdf
-                  );
-
 our $VERSION = '2.0.0'; # x-release-please-version
 
 use Paubox_Email_SDK::ApiHelper;
