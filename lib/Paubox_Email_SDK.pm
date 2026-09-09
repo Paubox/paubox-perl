@@ -9,7 +9,11 @@ our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(
                           getEmailDisposition
-                          sendMessage                         
+                          sendMessage
+                          scheduleMessage
+                          getScheduledMessage
+                          rescheduleMessage
+                          cancelScheduledMessage
                   );
 
 our $VERSION = '2.0.0'; # x-release-please-version
@@ -83,67 +87,54 @@ sub _returnforceSecureNotificationValue {
     }          
 }
 
-sub _convertMsgObjtoJSONReqObj {
-    
-    my ($msg) = @_;    
-    
-    my %reqObject;    
+sub _buildMessageData {
+
+    my ($msg) = @_;
+
     my $encodedHtmlContent = undef;
     my $forceSecureNotification = $msg -> {'forceSecureNotification'};
-    my $forceSecureNotificationValue = _returnforceSecureNotificationValue($forceSecureNotification);       
+    my $forceSecureNotificationValue = _returnforceSecureNotificationValue($forceSecureNotification);
 
     if ( defined($msg -> {'html_content'}) and $msg -> {'html_content'} ne "" ) {
         $encodedHtmlContent = trim (encode_base64($msg -> {'html_content'}) );
     }
-        
-    if($forceSecureNotificationValue eq "" ) {   
 
-        %reqObject = (
+    my %messageData = (
+        recipients => $msg -> {'to'},
+        cc => $msg -> {'cc'},
+        bcc => $msg -> {'bcc'},
+        headers => {
+            subject => $msg -> {'subject'},
+            from => $msg -> {'from'},
+            'reply-to' => $msg -> {'replyTo'}
+        },
+        allowNonTLS => $msg -> {'allowNonTLS'},
+        content => {
+            'text/plain' => $msg -> {'text_content'},
+            'text/html' => $encodedHtmlContent
+        },
+        attachments => $msg -> {'attachments'},
+    );
+
+    if($forceSecureNotificationValue ne "" ) {
+        $messageData{'forceSecureNotification'} = $forceSecureNotificationValue;
+    }
+
+    return \%messageData;
+}
+
+sub _convertMsgObjtoJSONReqObj {
+
+    my ($msg) = @_;
+
+    my $messageData = _buildMessageData($msg);
+    my %reqObject = (
         data => {
-            message => {
-                recipients => $msg -> {'to'},
-                cc => $msg -> {'cc'},
-                bcc => $msg -> {'bcc'},
-                headers => {
-                    subject => $msg -> {'subject'},
-                    from => $msg -> {'from'},
-                    'reply-to' => $msg -> {'replyTo'}
-                },
-                allowNonTLS => $msg -> {'allowNonTLS'},                
-                content => {
-                    'text/plain' => $msg -> {'text_content'},
-                    'text/html' => $encodedHtmlContent
-                },
-                attachments => $msg -> {'attachments'},
-            },
-            
-        });
-    }
-    else {        
-        
-            %reqObject = (
-            data => {
-                message => {
-                    recipients => $msg -> {'to'},
-                    cc => $msg -> {'cc'},
-                    bcc => $msg -> {'bcc'},
-                    headers => {
-                        subject => $msg -> {'subject'},
-                        from => $msg -> {'from'},
-                        'reply-to' => $msg -> {'replyTo'}
-                    },
-                    allowNonTLS => $msg -> {'allowNonTLS'},
-                    forceSecureNotification => $forceSecureNotificationValue,
-                    content => {
-                        'text/plain' => $msg -> {'text_content'},
-                        'text/html' => $encodedHtmlContent
-                    },
-                    attachments => $msg -> {'attachments'},
-                },                
-            });                    
-    }
-        
-    return encode_json (\%reqObject);    
+            message => $messageData,
+        }
+    );
+
+    return encode_json (\%reqObject);
 }
 
 #
@@ -228,7 +219,85 @@ sub sendMessage {
          die $err;
     };
 
-    return $apiResponseJSON;    
+    return $apiResponseJSON;
+}
+
+sub scheduleMessage {
+    my ($class,$msgObj,$scheduledAt) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $messageData = _buildMessageData($msgObj);
+        my %reqObject = (
+            data => {
+                message => $messageData,
+                scheduled_at => $scheduledAt,
+            }
+        );
+        my $reqBody = encode_json(\%reqObject);
+        my $apiUrl = "/schedule";
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL, $apiUrl, _getAuthHeader(), $reqBody);
+
+        my $apiResponsePERL = from_json($apiResponseJSON);
+        if (
+            !length $apiResponsePERL -> {'data'}
+            && !length $apiResponsePERL -> {'sourceTrackingId'}
+            && !length $apiResponsePERL -> {'errors'}
+        )
+        {
+                die $apiResponseJSON;
+        }
+
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub getScheduledMessage {
+    my ($class,$sourceTrackingId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/schedule/" . $sourceTrackingId;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub rescheduleMessage {
+    my ($class,$sourceTrackingId,$scheduledAt) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my %reqObject = ( scheduled_at => $scheduledAt );
+        my $reqBody = encode_json(\%reqObject);
+        my $apiUrl = "/schedule/" . $sourceTrackingId;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByPatch($baseURL, $apiUrl, _getAuthHeader(), $reqBody);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub cancelScheduledMessage {
+    my ($class,$sourceTrackingId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $apiUrl = "/schedule/" . $sourceTrackingId . "/cancel";
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL, $apiUrl, _getAuthHeader(), "{}");
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
 }
 
 1;
