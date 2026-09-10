@@ -6,6 +6,19 @@ This file is Markdown so that release-please can maintain it. The filename is
 kept for CPAN convention; release-please is configured with
 `changelog-path: CHANGES`.
 
+## [2.1.0](https://github.com/Paubox/paubox-perl/compare/v2.0.0...v2.1.0) (2026-09-10)
+
+
+### Features
+
+* add scheduled send support ([#22](https://github.com/Paubox/paubox-perl/issues/22)) ([a52f482](https://github.com/Paubox/paubox-perl/commit/a52f4822922a9a8e7e3b538b55675413e051b825))
+
+
+### Bug Fixes
+
+* correct the release dist job ([#17](https://github.com/Paubox/paubox-perl/issues/17)) ([0c61fbe](https://github.com/Paubox/paubox-perl/commit/0c61fbe204f1c4a99528ef20a37c699262df7340))
+* target the documented /v1/email and /v1/forms base URLs ([#19](https://github.com/Paubox/paubox-perl/issues/19)) ([c71ec4b](https://github.com/Paubox/paubox-perl/commit/c71ec4ba5340591c0f7801bae541eedd0c22eedf))
+
 ## [2.0.0](https://github.com/Paubox/paubox-perl/compare/v1.2.0...v2.0.0) (2026-08-21)
 
 
