@@ -149,6 +149,52 @@ my $messageObj = new Paubox_Email_SDK::Message(
 ```
 
 
+### Scheduled send
+
+Schedule a message for future delivery, check its status, reschedule, or cancel it.
+
+#### Scheduling a message
+
+```perl
+use strict;
+use warnings;
+use Paubox_Email_SDK;
+
+my $messageObj = new Paubox_Email_SDK::Message(
+   'from' => 'sender@domain.com',
+   'to' => ['recipient@example.com'],
+   'subject' => 'Scheduled message',
+   'text_content' => 'This will be delivered later.',
+);
+
+my $service = Paubox_Email_SDK -> new();
+my $response = $service -> scheduleMessage($messageObj, '2025-12-25T15:00:00Z');
+print $response;
+```
+
+`scheduledAt` must be an ISO 8601 UTC datetime string in the future and within 30 days.
+
+#### Getting scheduled message status
+
+```perl
+my $response = $service -> getScheduledMessage("SOURCE_TRACKING_ID");
+print $response;
+```
+
+#### Rescheduling a message
+
+```perl
+my $response = $service -> rescheduleMessage("SOURCE_TRACKING_ID", "2025-12-26T10:00:00Z");
+print $response;
+```
+
+#### Cancelling a scheduled message
+
+```perl
+my $response = $service -> cancelScheduledMessage("SOURCE_TRACKING_ID");
+print $response;
+```
+
 ### Checking Email Dispositions
 
 The SOURCE_TRACKING_ID of a message is returned in the response of the sendMessage method. To check the status for any email, use its source tracking id and call the getEmailDisposition method of Paubox_Email_SDK:

@@ -10,6 +10,7 @@ our @EXPORT_OK = qw(
                           callToAPIByGet
                           callToAPIByPost
                           callToAPIByPut
+                          callToAPIByPatch
                           responseCode
                   );
 
@@ -77,6 +78,26 @@ sub callToAPIByPut {
 
     $client -> setHost($baseUrl);
     $client -> PUT(
+        $apiUrl,
+        $reqBody
+    );
+    $class -> {'responseCode'} = $client -> responseCode() if ref($class);
+    return $client -> responseContent();
+}
+
+sub callToAPIByPatch {
+
+    my($class, $baseUrl, $apiUrl, $authHeader, $reqBody) = @_;
+
+    my $client = REST::Client -> new();
+    $client -> setTimeout(30);
+
+    $client -> addHeader('Content-Type', 'application/json');
+    $client -> addHeader('Authorization', $authHeader) if $authHeader;
+    $client -> addHeader('Accept', 'application/json');
+
+    $client -> setHost($baseUrl);
+    $client -> PATCH(
         $apiUrl,
         $reqBody
     );
