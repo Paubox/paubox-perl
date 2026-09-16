@@ -14,6 +14,17 @@ our @EXPORT_OK = qw(
                           getScheduledMessage
                           rescheduleMessage
                           cancelScheduledMessage
+                          listReceivingDomains
+                          createReceivingDomain
+                          getReceivingDomain
+                          deleteReceivingDomain
+                          listMailboxes
+                          createMailbox
+                          getMailbox
+                          deleteMailbox
+                          listReceivedEmails
+                          getReceivedEmail
+                          getReceivedEmailAttachment
                   );
 
 our $VERSION = '2.0.0'; # x-release-please-version
@@ -293,6 +304,180 @@ sub cancelScheduledMessage {
         my $apiUrl = "/schedule/" . $sourceTrackingId . "/cancel";
         my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
         $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL, $apiUrl, _getAuthHeader(), "{}");
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub listReceivingDomains {
+    my ($class) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving/domains";
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub createReceivingDomain {
+    my ($class,$params) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $apiUrl = "/receiving/domains";
+        my $reqBody = defined($params) && ref($params) eq 'HASH' ? encode_json($params) : "{}";
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL, $apiUrl, _getAuthHeader(), $reqBody);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub getReceivingDomain {
+    my ($class,$domainId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving/domains/" . $domainId;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub deleteReceivingDomain {
+    my ($class,$domainId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving/domains/" . $domainId;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByDelete($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub listMailboxes {
+    my ($class,$domainId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving/domains/" . $domainId . "/mailboxes";
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub createMailbox {
+    my ($class,$domainId,$params) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $apiUrl = "/receiving/domains/" . $domainId . "/mailboxes";
+        my $reqBody = encode_json($params);
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL, $apiUrl, _getAuthHeader(), $reqBody);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub getMailbox {
+    my ($class,$domainId,$mailboxId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving/domains/" . $domainId . "/mailboxes/" . $mailboxId;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub deleteMailbox {
+    my ($class,$domainId,$mailboxId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving/domains/" . $domainId . "/mailboxes/" . $mailboxId;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByDelete($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub listReceivedEmails {
+    my ($class,$params) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving";
+        if (defined($params) && ref($params) eq 'HASH') {
+            my @pairs;
+            foreach my $key (qw(limit after before)) {
+                if (defined($params->{$key})) {
+                    push @pairs, $key . "=" . $params->{$key};
+                }
+            }
+            $apiUrl .= "?" . join("&", @pairs) if @pairs;
+        }
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub getReceivedEmail {
+    my ($class,$emailId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving/" . $emailId;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub getReceivedEmailAttachment {
+    my ($class,$emailId,$blobId) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/receiving/" . $emailId . "/attachments/" . $blobId;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
     } catch($err) {
          die $err;
     };

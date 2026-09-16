@@ -11,6 +11,7 @@ our @EXPORT_OK = qw(
                           callToAPIByPost
                           callToAPIByPut
                           callToAPIByPatch
+                          callToAPIByDelete
                           responseCode
                   );
 
@@ -100,6 +101,24 @@ sub callToAPIByPatch {
     $client -> PATCH(
         $apiUrl,
         $reqBody
+    );
+    $class -> {'responseCode'} = $client -> responseCode() if ref($class);
+    return $client -> responseContent();
+}
+
+sub callToAPIByDelete {
+
+    my($class, $baseUrl, $apiUrl, $authHeader) = @_;
+
+    my $client = REST::Client -> new();
+    $client -> setTimeout(30);
+
+    $client -> addHeader('Content-Type', 'application/json');
+    $client -> addHeader('Authorization', $authHeader) if $authHeader;
+
+    $client -> setHost($baseUrl);
+    $client -> DELETE(
+        $apiUrl
     );
     $class -> {'responseCode'} = $client -> responseCode() if ref($class);
     return $client -> responseContent();
