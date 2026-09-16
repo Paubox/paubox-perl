@@ -23,7 +23,7 @@ our @EXPORT_OK = qw(
                           getSubmissionPdf
                   );
 
-our $VERSION = '2.1.0'; # x-release-please-version
+our $VERSION = '2.2.0'; # x-release-please-version
 
 use Paubox_Email_SDK::ApiHelper;
 
