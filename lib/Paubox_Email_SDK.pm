@@ -25,6 +25,11 @@ our @EXPORT_OK = qw(
                           listReceivedEmails
                           getReceivedEmail
                           getReceivedEmailAttachment
+                          listWebhookEndpoints
+                          createWebhookEndpoint
+                          getWebhookEndpoint
+                          updateWebhookEndpoint
+                          deleteWebhookEndpoint
                   );
 
 our $VERSION = '2.2.0'; # x-release-please-version
@@ -478,6 +483,93 @@ sub getReceivedEmailAttachment {
         my $apiUrl = "/receiving/" . $emailId . "/attachments/" . $blobId;
         my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
         $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub listWebhookEndpoints {
+    my ($class) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/webhook_endpoints";
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub createWebhookEndpoint {
+    my ($class,$params) = @_;
+    my $apiResponseJSON = "";
+    try{
+        if (!defined($params) || ref($params) ne 'HASH') {
+            die "params must be a hash reference.";
+        }
+        if (!defined($params->{'target_url'}) || $params->{'target_url'} eq '') {
+            die "target_url is required.";
+        }
+        if (!defined($params->{'events'}) || ref($params->{'events'}) ne 'ARRAY' || scalar(@{$params->{'events'}}) == 0) {
+            die "events is required and must be a non-empty array.";
+        }
+        my $apiUrl = "/webhook_endpoints";
+        my $reqBody = encode_json($params);
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL, $apiUrl, _getAuthHeader(), $reqBody);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub getWebhookEndpoint {
+    my ($class,$id) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/webhook_endpoints/" . $id;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub updateWebhookEndpoint {
+    my ($class,$id,$params) = @_;
+    my $apiResponseJSON = "";
+    try{
+        if (!defined($params) || ref($params) ne 'HASH') {
+            die "params must be a hash reference.";
+        }
+        my $apiUrl = "/webhook_endpoints/" . $id;
+        my $reqBody = encode_json($params);
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByPatch($baseURL, $apiUrl, _getAuthHeader(), $reqBody);
+    } catch($err) {
+         die $err;
+    };
+
+    return $apiResponseJSON;
+}
+
+sub deleteWebhookEndpoint {
+    my ($class,$id) = @_;
+    my $apiResponseJSON = "";
+    try{
+        my $authHeader = _getAuthHeader();
+        my $apiUrl = "/webhook_endpoints/" . $id;
+        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
+        $apiResponseJSON = $apiHelper -> callToAPIByDelete($baseURL, $apiUrl, $authHeader);
     } catch($err) {
          die $err;
     };
