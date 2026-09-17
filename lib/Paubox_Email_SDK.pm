@@ -32,7 +32,7 @@ our @EXPORT_OK = qw(
                           deleteWebhookEndpoint
                   );
 
-our $VERSION = '2.2.0'; # x-release-please-version
+our $VERSION = '2.3.0'; # x-release-please-version
 
 use Paubox_Email_SDK::ApiHelper;
 use Paubox_Email_SDK::Message;
