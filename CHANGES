@@ -6,6 +6,13 @@ This file is Markdown so that release-please can maintain it. The filename is
 kept for CPAN convention; release-please is configured with
 `changelog-path: CHANGES`.
 
+## [2.3.1](https://github.com/Paubox/paubox-perl/compare/v2.3.0...v2.3.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* **receiving:** align received-email calls with the UUID-keyed receiving API ([#28](https://github.com/Paubox/paubox-perl/issues/28)) ([b1df8e2](https://github.com/Paubox/paubox-perl/commit/b1df8e23eb26d2db82052ff842f0b910bbe0e934))
+
 ## [2.3.0](https://github.com/Paubox/paubox-perl/compare/v2.2.0...v2.3.0) (2026-09-17)
 
 
