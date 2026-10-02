@@ -42,6 +42,7 @@ use Config::General;
 use TryCatch;
 use String::Util qw(trim);
 use MIME::Base64;
+use URI::Escape;
 
 my $apiKey ="";
 my $baseURL = "https://api.paubox.com/v1/email";
@@ -81,6 +82,23 @@ sub new{
 
 sub _getAuthHeader {
     return  "Token token=" .$apiKey; 
+}
+
+sub _pathSegment {
+    my ($value, $name) = @_;
+    if ( !defined($value) || $value eq "" ) {
+        die $name . " is required.";
+    }
+    if ( $value eq "." || $value eq ".." ) {
+        die "invalid " . $name . ": '" . $value . "' is not allowed.";
+    }
+    return uri_escape($value);
+}
+
+# The API parses booleans only from the literal strings "true"/"false".
+sub _booleanQueryValue {
+    my ($value) = @_;
+    return ( $value && lc("$value") ne "false" ) ? "true" : "false";
 }
 
 sub _returnforceSecureNotificationValue {
@@ -444,9 +462,12 @@ sub listReceivedEmails {
         my $apiUrl = "/receiving";
         if (defined($params) && ref($params) eq 'HASH') {
             my @pairs;
-            foreach my $key (qw(limit after before)) {
+            foreach my $key (qw(limit after before search sort ascending)) {
                 if (defined($params->{$key})) {
-                    push @pairs, $key . "=" . $params->{$key};
+                    my $value = $key eq 'ascending'
+                        ? _booleanQueryValue($params->{$key})
+                        : uri_escape($params->{$key});
+                    push @pairs, $key . "=" . $value;
                 }
             }
             $apiUrl .= "?" . join("&", @pairs) if @pairs;
@@ -465,7 +486,7 @@ sub getReceivedEmail {
     my $apiResponseJSON = "";
     try{
         my $authHeader = _getAuthHeader();
-        my $apiUrl = "/receiving/" . $emailId;
+        my $apiUrl = "/receiving/" . _pathSegment($emailId, "email_id");
         my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
         $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
     } catch($err) {
@@ -476,18 +497,26 @@ sub getReceivedEmail {
 }
 
 sub getReceivedEmailAttachment {
-    my ($class,$emailId,$blobId) = @_;
-    my $apiResponseJSON = "";
+    my ($class,$emailId,$attachmentId) = @_;
+    my $apiResponse = "";
     try{
         my $authHeader = _getAuthHeader();
-        my $apiUrl = "/receiving/" . $emailId . "/attachments/" . $blobId;
+        my $apiUrl = "/receiving/" . _pathSegment($emailId, "email_id")
+            . "/attachments/" . _pathSegment($attachmentId, "attachment_id");
         my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
-        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+        $apiResponse = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
+
+        my $responseCode = $apiHelper -> responseCode();
+        if ( !defined($responseCode) || $responseCode !~ /^2\d\d$/ ) {
+            die ( defined($apiResponse) && $apiResponse ne ""
+                ? $apiResponse
+                : "Request failed with HTTP status " . ( defined($responseCode) ? $responseCode : "unknown" ) . "." );
+        }
     } catch($err) {
          die $err;
     };
 
-    return $apiResponseJSON;
+    return $apiResponse;
 }
 
 sub listWebhookEndpoints {
