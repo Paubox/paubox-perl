@@ -2,6 +2,7 @@ lib/Paubox_Email_SDK.pm
 lib/Paubox_Email_SDK/ApiHelper.pm
 lib/Paubox_Email_SDK/Message.pm
 lib/Paubox_Forms_SDK.pm
+lib/Paubox_Webhooks_SDK.pm
 cpanfile
 LICENSE
 Makefile.PL

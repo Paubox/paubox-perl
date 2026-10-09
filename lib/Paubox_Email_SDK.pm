@@ -25,11 +25,6 @@ our @EXPORT_OK = qw(
                           listReceivedEmails
                           getReceivedEmail
                           getReceivedEmailAttachment
-                          listWebhookEndpoints
-                          createWebhookEndpoint
-                          getWebhookEndpoint
-                          updateWebhookEndpoint
-                          deleteWebhookEndpoint
                   );
 
 our $VERSION = '2.3.1'; # x-release-please-version
@@ -174,7 +169,6 @@ sub _convertMsgObjtoJSONReqObj {
 #
 # Public methods
 #
-
 
 #
 # Get Email Disposition
@@ -519,93 +513,6 @@ sub getReceivedEmailAttachment {
     return $apiResponse;
 }
 
-sub listWebhookEndpoints {
-    my ($class) = @_;
-    my $apiResponseJSON = "";
-    try{
-        my $authHeader = _getAuthHeader();
-        my $apiUrl = "/webhook_endpoints";
-        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
-        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
-    } catch($err) {
-         die $err;
-    };
-
-    return $apiResponseJSON;
-}
-
-sub createWebhookEndpoint {
-    my ($class,$params) = @_;
-    my $apiResponseJSON = "";
-    try{
-        if (!defined($params) || ref($params) ne 'HASH') {
-            die "params must be a hash reference.";
-        }
-        if (!defined($params->{'target_url'}) || $params->{'target_url'} eq '') {
-            die "target_url is required.";
-        }
-        if (!defined($params->{'events'}) || ref($params->{'events'}) ne 'ARRAY' || scalar(@{$params->{'events'}}) == 0) {
-            die "events is required and must be a non-empty array.";
-        }
-        my $apiUrl = "/webhook_endpoints";
-        my $reqBody = encode_json($params);
-        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
-        $apiResponseJSON = $apiHelper -> callToAPIByPost($baseURL, $apiUrl, _getAuthHeader(), $reqBody);
-    } catch($err) {
-         die $err;
-    };
-
-    return $apiResponseJSON;
-}
-
-sub getWebhookEndpoint {
-    my ($class,$id) = @_;
-    my $apiResponseJSON = "";
-    try{
-        my $authHeader = _getAuthHeader();
-        my $apiUrl = "/webhook_endpoints/" . $id;
-        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
-        $apiResponseJSON = $apiHelper -> callToAPIByGet($baseURL, $apiUrl, $authHeader);
-    } catch($err) {
-         die $err;
-    };
-
-    return $apiResponseJSON;
-}
-
-sub updateWebhookEndpoint {
-    my ($class,$id,$params) = @_;
-    my $apiResponseJSON = "";
-    try{
-        if (!defined($params) || ref($params) ne 'HASH') {
-            die "params must be a hash reference.";
-        }
-        my $apiUrl = "/webhook_endpoints/" . $id;
-        my $reqBody = encode_json($params);
-        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
-        $apiResponseJSON = $apiHelper -> callToAPIByPatch($baseURL, $apiUrl, _getAuthHeader(), $reqBody);
-    } catch($err) {
-         die $err;
-    };
-
-    return $apiResponseJSON;
-}
-
-sub deleteWebhookEndpoint {
-    my ($class,$id) = @_;
-    my $apiResponseJSON = "";
-    try{
-        my $authHeader = _getAuthHeader();
-        my $apiUrl = "/webhook_endpoints/" . $id;
-        my $apiHelper = Paubox_Email_SDK::ApiHelper -> new();
-        $apiResponseJSON = $apiHelper -> callToAPIByDelete($baseURL, $apiUrl, $authHeader);
-    } catch($err) {
-         die $err;
-    };
-
-    return $apiResponseJSON;
-}
-
 1;
 __END__
 
@@ -637,7 +544,6 @@ This is the official Perl wrapper for the Paubox Transactional Email API (https:
 
 The Paubox Transactional Email API allows your application to send secure, HIPAA-compliant email via Paubox and track deliveries and opens. The API wrapper allows you to construct and send messages.
 
-
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2019 by Paubox Inc.
@@ -651,6 +557,5 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
 
 =cut

@@ -2,6 +2,6 @@ use strict;
 use warnings;
 use lib "t/lib";
 
-use Paubox_Email_SDK::WebhookTest;
+use Paubox_Webhooks_SDK::Test;
 
-Paubox_Email_SDK::WebhookTest->runtests;
+Paubox_Webhooks_SDK::Test->runtests;

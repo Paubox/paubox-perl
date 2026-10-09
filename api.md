@@ -579,3 +579,116 @@ open(my $fh, '>:raw', 'submission.pdf') or die $!;
 print $fh $pdf;
 close($fh);
 ```
+
+---
+
+## Webhooks API
+
+**Module:** `Paubox_Webhooks_SDK`  
+**Base URL:** `https://api.paubox.com/v1/webhooks`  
+**Authentication:** Required on every endpoint — a Paubox scoped API key sent as
+`Authorization: Bearer <apiKey>`. This is the same scheme as the Forms API and a
+different one from the Email API's `Token token=`. Unlike the Forms SDK there are
+no public endpoints.
+
+Which events a key may subscribe to is decided by its scopes. Subscribing to an
+event the key is not scoped for returns `403`; an unrecognised event returns `422`.
+
+> **Breaking change.** These five methods previously lived on `Paubox_Email_SDK`
+> and targeted the legacy Email API at `/v1/email/webhook_endpoints` with integer
+> ids and `Token token=` auth. They now live on `Paubox_Webhooks_SDK`, target the
+> webhooks service, and take UUID ids. The method names are unchanged.
+
+All methods return the raw JSON response body, except `deleteWebhookEndpoint`,
+which returns `1` because the service answers `204` with no body. Failures `die`
+with the service's own message.
+
+---
+
+### `Paubox_Webhooks_SDK->new([%params])`
+
+```perl
+my $webhooks = Paubox_Webhooks_SDK->new('apiKey' => 'YOUR_SCOPED_KEY');
+```
+
+Falls back to `WEBHOOKS_API_KEY` in `./config.cfg` when no key is passed.
+
+---
+
+### `listWebhookEndpoints([\%params])`
+
+Lists the endpoints this key can act on. Endpoints carrying an event the key is
+not scoped for are filtered out by the service.
+
+Optional keys: `page`, `items`.
+
+```perl
+my $json = $webhooks->listWebhookEndpoints({ 'page' => 1, 'items' => 50 });
+```
+
+Returns `{"data": [...], "page_info": {...}}`. **`page_info.count` is the total
+number of matching endpoints, not the length of the returned page.**
+
+---
+
+### `createWebhookEndpoint(\%params)`
+
+Subscribes a URL to one or more events. `target_url` must be an `https` URL
+resolving to a publicly routable address.
+
+Required keys: `target_url`, `events` (arrayref).
+
+```perl
+my $json = $webhooks->createWebhookEndpoint({
+    'target_url' => 'https://hooks.example.com/paubox',
+    'events'     => ['forms.submission.created'],
+});
+```
+
+The response carries `signing_secret`, which the service returns **only here** —
+it is absent from `getWebhookEndpoint` and `listWebhookEndpoints`. Store it on
+receipt; a lost secret means replacing the endpoint.
+
+Event names are **not** validated locally: the catalog belongs to the service and
+grows without an SDK release.
+
+---
+
+### `getWebhookEndpoint($endpointId)`
+
+```perl
+my $json = $webhooks->getWebhookEndpoint('2ec66c21-bf48-48eb-8d28-f80b2d6b77c7');
+```
+
+`$endpointId` must be a UUID; anything else dies before a request is made. A
+malformed UUID and another tenant's id both return `404` with the same message —
+the service gives no existence oracle.
+
+---
+
+### `updateWebhookEndpoint($endpointId, \%params)`
+
+Partial update — only the keys given are sent, so changing `target_url` leaves
+`events` and `status` untouched.
+
+Optional keys: `target_url`, `status` (`active` or `disabled`), `events`.
+
+```perl
+$webhooks->updateWebhookEndpoint($endpointId, { 'status' => 'disabled' });
+```
+
+---
+
+### `deleteWebhookEndpoint($endpointId)`
+
+Deletes the endpoint, stopping every event on it. Returns `1`.
+
+---
+
+### Webhook errors
+
+Methods `die` with the service's own message, so a caller sees
+`target_url: must be an https URL` rather than a raw JSON blob. Falls back to the
+response body, then to the status code.
+
+Note a duplicate `target_url` is **`422`, not `409`**.
