@@ -4,6 +4,7 @@ use warnings;
 
 use Paubox_Email_SDK;
 use Paubox_Email_SDK::ApiHelper;
+use Paubox_Email_SDK::ReceivingTest ();
 
 use JSON;
 use Test::More;
@@ -112,6 +113,37 @@ sub listWebhookEndpoints_Live: Tests(1) {
             is('Failure', 'Success', 'Test failed: unexpected response type');
         }
     }
+}
+
+# pb_email_api WebhookParams declares `active: Option<bool>`, so integers are rejected.
+sub webhookActive_SentAsJsonBoolean_Offline: Tests(6) {
+    print "Executing tests for webhookActive_SentAsJsonBoolean_Offline:\n";
+
+    my $created = encode_json({ 'message' => 'Webhook created!', 'data' => { 'id' => 42 } });
+    my $params = { 'target_url' => 'https://example.com/hook', 'events' => ['api_mail_log_delivered'], 'active' => 1 };
+    my $requests = Paubox_Email_SDK::ReceivingTest::_withStubbedHttp(
+        'status' => 201,
+        'body'   => $created,
+        'call'   => sub { Paubox_Email_SDK -> createWebhookEndpoint($params) },
+    );
+    my $sent = decode_json($requests -> [0]{'content'});
+    ok(JSON::is_bool($sent -> {'active'}), 'create: active is a JSON boolean');
+    ok($sent -> {'active'}, 'create: active => 1 sends true');
+    is($params -> {'active'}, 1, "create: caller's hash is not modified");
+
+    $requests = Paubox_Email_SDK::ReceivingTest::_withStubbedHttp(
+        'body' => encode_json({ 'data' => { 'id' => 42 } }),
+        'call' => sub { Paubox_Email_SDK -> updateWebhookEndpoint(42, { 'active' => 0 }) },
+    );
+    $sent = decode_json($requests -> [0]{'content'});
+    ok(JSON::is_bool($sent -> {'active'}), 'update: active is a JSON boolean');
+    ok(!$sent -> {'active'}, 'update: active => 0 sends false');
+
+    $requests = Paubox_Email_SDK::ReceivingTest::_withStubbedHttp(
+        'body' => encode_json({ 'data' => { 'id' => 42 } }),
+        'call' => sub { Paubox_Email_SDK -> updateWebhookEndpoint(42, { 'target_url' => 'https://example.com/new' }) },
+    );
+    ok(!exists decode_json($requests -> [0]{'content'}) -> {'active'}, 'update: active is omitted when not given');
 }
 
 1;

@@ -20,6 +20,20 @@ Dies with an error message if the credential is missing.
 
 ---
 
+### `$service->responseCode()`
+
+Returns the HTTP status code of the most recent request made through this
+instance, or `undef` if none has been made. Email API methods return the
+response body whatever the status, so check this to tell an API error from a
+success:
+
+```perl
+my $response = $service->sendMessage($msg);
+die $response unless $service->responseCode() =~ /^2/;
+```
+
+---
+
 ### `$service->sendMessage($messageObj)`
 
 Sends a HIPAA-compliant email message.
@@ -38,7 +52,7 @@ Sends a HIPAA-compliant email message.
 | `replyTo`               | String   | No       | Reply-to address                                   |
 | `cc`                    | ArrayRef | No       | CC recipients                                      |
 | `bcc`                   | ArrayRef | No       | BCC recipients                                     |
-| `allowNonTLS`           | Boolean  | No       | `1` to allow delivery without TLS (default: `0`)  |
+| `allowNonTLS`           | Boolean  | No       | Truthy (or `"true"`) to allow delivery without TLS; sent as a JSON boolean (default: false) |
 | `forceSecureNotification` | String | No      | `"true"` or `"false"` to override org default     |
 | `attachments`           | ArrayRef | No       | Array of attachment hashrefs (see below)           |
 
@@ -51,7 +65,7 @@ Sends a HIPAA-compliant email message.
 | `content`     | String | Base64-encoded file content              |
 
 **Returns:** JSON string. On success, contains `data` and `sourceTrackingId`. On
-failure, contains `errors`.
+failure, contains `errors`; `$service->responseCode()` is the HTTP status.
 
 **Example:**
 

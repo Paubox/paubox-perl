@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use Paubox_Forms_SDK;
+use Paubox_Email_SDK::ReceivingTest ();
 
 use JSON;
 use Test::More;
@@ -587,6 +588,31 @@ sub getSubmissionPdf_Live: Tests(1) {
 
         ok(defined($response) && $response =~ /^%PDF/, 'getSubmissionPdf returned PDF bytes');
     }
+}
+
+# pb_rforms answers 201 with no body on success and ApiError::from (`{"message": ...}`) on failure.
+sub submitForm_HttpErrorDies_Offline: Tests(3) {
+    print "Executing tests for submitForm_HttpErrorDies_Offline:\n";
+
+    my $formId = '550e8400-e29b-41d4-a716-446655440000';
+    my $invalid = encode_json({ 'message' => 'Attachment content is not valid base64' });
+    Paubox_Email_SDK::ReceivingTest::_withStubbedHttp(
+        'status' => 400,
+        'body'   => $invalid,
+        'call'   => sub { Paubox_Forms_SDK -> new() -> submitForm($formId, { 'first_name' => 'x' }) },
+        'error'  => \my $error,
+    );
+    like($error, qr/^\Q$invalid\E/, 'a 400 dies with the response body');
+
+    Paubox_Email_SDK::ReceivingTest::_withStubbedHttp(
+        'status' => 201,
+        'body'   => '',
+        'call'   => sub { Paubox_Forms_SDK -> new() -> submitForm($formId, { 'first_name' => 'x' }) },
+        'result' => \my $result,
+        'error'  => \my $okError,
+    );
+    is($okError, '', 'a 201 does not die');
+    is($result, '', 'a 201 returns the empty body');
 }
 
 1;
