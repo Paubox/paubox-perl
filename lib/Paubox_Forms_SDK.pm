@@ -143,6 +143,17 @@ sub _coerceBooleanKeys {
     return;
 }
 
+sub _dieUnless2xx {
+    my ($apiHelper, $apiResponse) = @_;
+    my $responseCode = $apiHelper -> responseCode();
+    if ( !defined($responseCode) || $responseCode !~ /^2\d\d$/ ) {
+        die ( defined($apiResponse) && $apiResponse ne ""
+            ? $apiResponse
+            : "Request failed with HTTP status " . ( defined($responseCode) ? $responseCode : "unknown" ) . "." );
+    }
+    return;
+}
+
 #
 # Dies with the raw response when the HTTP status is not 2xx, when the body
 # is not parseable JSON, when the body carries an error payload
@@ -151,12 +162,7 @@ sub _coerceBooleanKeys {
 sub _assertSuccessKey {
     my ($apiHelper, $apiResponseJSON, $successKey) = @_;
 
-    my $responseCode = $apiHelper -> responseCode();
-    if ( !defined($responseCode) || $responseCode !~ /^2\d\d$/ ) {
-        die ( defined($apiResponseJSON) && $apiResponseJSON ne ""
-            ? $apiResponseJSON
-            : "Request failed with HTTP status " . ( defined($responseCode) ? $responseCode : "unknown" ) . "." );
-    }
+    _dieUnless2xx($apiHelper, $apiResponseJSON);
 
     my $apiResponsePERL = eval { from_json($apiResponseJSON) };
     if ( $@ || ref($apiResponsePERL) ne 'HASH' ) {
@@ -238,13 +244,7 @@ sub submitForm {
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponseJSON = $apiHelper->callToAPIByPost($formsBaseURL, $apiUrl, "", $reqBody);
 
-        # 201 Created returns an empty body; treat that as success
-        if ( defined($apiResponseJSON) && $apiResponseJSON ne "" ) {
-            my $apiResponsePERL = from_json($apiResponseJSON);
-            if ( defined $apiResponsePERL->{'errors'} ) {
-                die $apiResponseJSON;
-            }
-        }
+        _dieUnless2xx($apiHelper, $apiResponseJSON);
 
     } catch($err) {
         die $err;
@@ -535,12 +535,7 @@ sub getSubmissionsCsv {
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponse = $apiHelper->callToAPIByGet($formsBaseURL, $apiUrl, $authHeader);
 
-        my $responseCode = $apiHelper->responseCode();
-        if ( !defined($responseCode) || $responseCode !~ /^2\d\d$/ ) {
-            die ( defined($apiResponse) && $apiResponse ne ""
-                ? $apiResponse
-                : "Request failed with HTTP status " . ( defined($responseCode) ? $responseCode : "unknown" ) . "." );
-        }
+        _dieUnless2xx($apiHelper, $apiResponse);
 
     } catch($err) {
         die $err;
@@ -565,12 +560,7 @@ sub getSubmissionPdf {
         my $apiHelper = Paubox_Email_SDK::ApiHelper->new();
         $apiResponse = $apiHelper->callToAPIByGet($formsBaseURL, $apiUrl, $authHeader);
 
-        my $responseCode = $apiHelper->responseCode();
-        if ( !defined($responseCode) || $responseCode !~ /^2\d\d$/ ) {
-            die ( defined($apiResponse) && $apiResponse ne ""
-                ? $apiResponse
-                : "Request failed with HTTP status " . ( defined($responseCode) ? $responseCode : "unknown" ) . "." );
-        }
+        _dieUnless2xx($apiHelper, $apiResponse);
 
     } catch($err) {
         die $err;

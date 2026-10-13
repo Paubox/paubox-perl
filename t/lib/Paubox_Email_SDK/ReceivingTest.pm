@@ -29,6 +29,7 @@ sub _withStubbedHttp {
                 'method'  => $method,
                 'url'     => $self -> getHost() . $url,
                 'headers' => { %{ $self -> {'_headers'} || {} } },
+                'content' => $content,
             };
             $self -> {'_res'} = HTTP::Response -> new(
                 $args{'status'} || 200, undef, $args{'headers'} || [], $args{'body'}
