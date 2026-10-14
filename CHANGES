@@ -6,6 +6,17 @@ This file is Markdown so that release-please can maintain it. The filename is
 kept for CPAN convention; release-please is configured with
 `changelog-path: CHANGES`.
 
+## [3.0.0](https://github.com/Paubox/paubox-perl/compare/v2.3.1...v3.0.0) (2026-10-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* move webhook CRUD to the pb_webhooks service ([#30](https://github.com/Paubox/paubox-perl/issues/30))
+
+### Features
+
+* move webhook CRUD to the pb_webhooks service ([#30](https://github.com/Paubox/paubox-perl/issues/30)) ([c56a93a](https://github.com/Paubox/paubox-perl/commit/c56a93a86cc28b7445f07d5c373f8509aa2ca1e1))
+
 ## [2.3.1](https://github.com/Paubox/paubox-perl/compare/v2.3.0...v2.3.1) (2026-10-02)
 
 
