@@ -27,7 +27,7 @@ our @EXPORT_OK = qw(
                           getReceivedEmailAttachment
                   );
 
-our $VERSION = '2.3.1'; # x-release-please-version
+our $VERSION = '3.0.0'; # x-release-please-version
 
 use Paubox_Email_SDK::ApiHelper;
 use Paubox_Email_SDK::Message;
