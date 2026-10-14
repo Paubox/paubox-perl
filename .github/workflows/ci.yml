@@ -46,5 +46,13 @@ jobs:
 
       - name: Probe the base URLs the SDKs use
         run: |
-          grep -hoE 'https://api\.paubox\.com[a-zA-Z0-9/_.-]*' lib/Paubox_Email_SDK.pm lib/Paubox_Forms_SDK.pm \
-            | .github/scripts/route-check.sh
+          {
+            grep -hoE 'https://api\.paubox\.com[a-zA-Z0-9/_.-]*' lib/Paubox_Email_SDK.pm lib/Paubox_Forms_SDK.pm
+            # The webhooks base is probed with /endpoints appended. The gateway
+            # scopes its rule to that one resource so the producers' event-ingest
+            # route stays off the public host, which leaves the bare base
+            # unrouted by design — probing it directly would fail this check for
+            # a URL the SDK never requests on its own.
+            grep -hoE 'https://api\.paubox\.com[a-zA-Z0-9/_.-]*' lib/Paubox_Webhooks_SDK.pm \
+              | sed 's#$#/endpoints#'
+          } | .github/scripts/route-check.sh

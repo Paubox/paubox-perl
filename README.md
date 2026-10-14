@@ -342,6 +342,93 @@ close($fh);
 
 See [api.md](api.md) for the full Forms API reference.
 
+### Webhooks
+
+A webhook endpoint is a URL you own that Paubox notifies when something happens.
+`Paubox_Webhooks_SDK` manages those subscriptions: which URL to notify, and for which events.
+
+Every method needs a **scoped API key**, sent as `Authorization: Bearer <key>` — not the Email
+API's `Token token=`. Pass it to the constructor, or put `WEBHOOKS_API_KEY` in `config.cfg`:
+
+```perl
+use strict;
+use warnings;
+use Paubox_Webhooks_SDK;
+
+# Explicitly:
+my $service = Paubox_Webhooks_SDK->new('apiKey' => 'YOUR_SCOPED_API_KEY');
+
+# Or via config.cfg containing: WEBHOOKS_API_KEY = YOUR_SCOPED_API_KEY
+my $service2 = Paubox_Webhooks_SDK->new();
+```
+
+Which events a key may subscribe to follows from its scopes. The SDK does not inspect them — the
+service refuses an event the key isn't scoped for with 403, and an unrecognised event with 422.
+
+**Available events**
+
+| Event | Fires when |
+| --- | --- |
+| `forms.submission.created` | A form submission is received |
+| `api_mail_log_delivered` | An Email API message is delivered |
+| `api_mail_log_opened` | A delivered message is opened |
+| `api_mail_log_temporary_failure` | Delivery fails temporarily |
+| `api_mail_log_permanent_failure` | Delivery fails permanently |
+| `email.inbound.received` | Inbound mail is received |
+
+The four Email API events keep their legacy `api_mail_log_` names, so a receiver written
+against the old Email API webhooks keeps working unchanged. Note these are the names on
+the wire: `delivered` or `failed` on their own are rejected as unknown.
+
+The SDK does not check these names. The catalog lives in the service, so an event added
+later works here without upgrading the SDK.
+
+#### Creating and listing endpoints
+
+```perl
+my $created = $service->createWebhookEndpoint({
+    target_url => 'https://example.com/paubox-webhook',
+    events     => ['forms.submission.created'],
+});
+# Returns JSON with "data" carrying id, status, events and signing_secret
+
+my $list = $service->listWebhookEndpoints();
+# Returns JSON with "data" (array of endpoints) and "page_info"
+
+my $page2 = $service->listWebhookEndpoints({ page => 2, items => 25 });
+```
+
+`signing_secret` is returned **once**, on create. It is absent from `getWebhookEndpoint` and
+`listWebhookEndpoints`, and there is no way to read it back — recovering from a lost secret means
+deleting the endpoint and creating a new one. Use it to verify that deliveries really came from
+Paubox. Note `page_info` `count` is the total number of matching endpoints, not the length of the
+page you were handed.
+
+#### Fetching, updating and deleting
+
+```perl
+my $endpoint = $service->getWebhookEndpoint('2ec66c21-bf48-48eb-8d28-f80b2d6b77c7');
+
+# Only the keys you pass are sent, so this leaves target_url and events alone
+my $updated = $service->updateWebhookEndpoint($endpointId, { status => 'disabled' });
+
+$service->deleteWebhookEndpoint($endpointId);
+# Returns nothing — the service answers HTTP 204
+```
+
+Pausing deliveries without losing the subscription is what `disabled` is for; pass `active` to
+resume. Passing `events` replaces the list rather than adding to it. Deleting stops every event on
+that endpoint, and the signing secret goes with it.
+
+#### Webhook errors
+
+A non-2xx response dies with the service's own message, so you see
+`target_url: an endpoint already exists for this URL` rather than a bare status. Subscribing a
+`target_url` that already has an endpoint is a 422, and an id that doesn't belong to your account
+is a 404 rather than a 403. An id that isn't UUID-shaped dies locally, before any request is made.
+
+See [api.md](api.md) for the full webhooks reference.
+
 <a name="#contributing"></a>
 ## Contributing
 
