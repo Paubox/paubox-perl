@@ -85,7 +85,7 @@ See [api.md](api.md) for full API reference.
 
 ## Releases
 
-Releases are automated with [release-please](https://github.com/googleapis/release-please). Merging to `master` refreshes a standing release PR; merging *that* PR bumps `version.txt` and all four `$VERSION` declarations, writes `CHANGES`, creates a bare `vX.Y.Z` tag and a GitHub release, and **attaches a freshly built distribution tarball to that release**.
+Releases are automated with [release-please](https://github.com/googleapis/release-please). Merging to `master` refreshes a standing release PR; merging *that* PR bumps `version.txt` and all five `$VERSION` declarations, writes `CHANGES`, creates a bare `vX.Y.Z` tag and a GitHub release, and **attaches a freshly built distribution tarball to that release**.
 
 Do **not** hand-edit `$VERSION`, `version.txt`, or `CHANGES` — release-please owns all three.
 
@@ -97,7 +97,7 @@ The next version comes from PR titles: `feat:` gives a minor bump, `fix:` a patc
 
 **The next CPAN version has to be `2.0.0` or higher.** Perl compares `1.5` as `v1.500.0`, so no `1.x.y` semver exceeds what the repo previously declared, and PAUSE would reject it as a downgrade. release-please only emits three-part semver, so there is no smaller number available.
 
-**`$VERSION` is declared in four files** — `Paubox_Email_SDK.pm`, `Paubox_Forms_SDK.pm`, `ApiHelper.pm`, `Message.pm`. Only the first feeds `Makefile.PL`'s `VERSION_FROM`, so the others can drift unnoticed; all four are listed as `extra-files` and the release job asserts they agree. Each carries an `x-release-please-version` annotation, and those are load-bearing.
+**`$VERSION` is declared in five files** — `Paubox_Email_SDK.pm`, `Paubox_Forms_SDK.pm`, `Paubox_Webhooks_SDK.pm`, `ApiHelper.pm`, `Message.pm`. Only the first feeds `Makefile.PL`'s `VERSION_FROM`, so the others can drift unnoticed; all five are listed as `extra-files` and the release job fails if any declaration under `lib/` differs from the tag. A new module with a `$VERSION` must be added to `extra-files`. Each carries an `x-release-please-version` annotation, and those are load-bearing.
 
 ### Not published to CPAN
 
