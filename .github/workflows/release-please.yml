@@ -16,7 +16,7 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      # Maintains a release PR that bumps version.txt and the four $VERSION
+      # Maintains a release PR that bumps version.txt and the five $VERSION
       # declarations, and writes CHANGES. Merging that PR creates the tag and
       # the GitHub release, which gates the dist build below.
       #
@@ -26,8 +26,8 @@ jobs:
       # insertion regex matched nothing, which would have prepended a header and
       # stranded the existing entries beneath it.
       #
-      # $VERSION lives in FOUR files. Makefile.PL derives from the first via
-      # VERSION_FROM, but the other three would drift if left out. Each carries
+      # $VERSION lives in FIVE files. Makefile.PL derives from the first via
+      # VERSION_FROM, but the other four would drift if left out. Each carries
       # an x-release-please-version annotation; those are load-bearing.
       #
       # Those declarations must stay three-part semver. release-please's updater
@@ -69,9 +69,10 @@ jobs:
           fi
           echo "\$VERSION ${declared} matches ${RELEASE_TAG}"
 
-      - name: Assert all four declarations agree
+      - name: Assert every declaration agrees
         # Only lib/Paubox_Email_SDK.pm feeds Makefile.PL's VERSION_FROM, so the
-        # other three can drift without anything noticing.
+        # others can drift without anything noticing. Fail on any mismatch
+        # rather than counting matches, so a new module can't slip past.
         #
         # Use the release output, not GITHUB_REF_NAME: this workflow is
         # triggered by a push to master and only *checks out* the tag, so
@@ -80,9 +81,9 @@ jobs:
           RELEASE_TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
           want=${RELEASE_TAG#v}
-          n=$(grep -rh "our \$VERSION" lib/ | grep -c "'${want}'" || true)
-          echo "declarations at ${want}: ${n} of 4"
-          [ "$n" -eq 4 ] || { echo "::error::expected all 4 \$VERSION declarations to be ${want}" >&2; exit 1; }
+          bad=$(grep -rnF 'our $VERSION' lib/ | grep -v "'${want}'" || true)
+          [ -z "$bad" ] || { echo "::error::\$VERSION declarations not at ${want}:" >&2; echo "$bad" >&2; exit 1; }
+          echo "every \$VERSION declaration is ${want}"
 
       - name: Install dependencies
         run: cpanm --notest --installdeps .
